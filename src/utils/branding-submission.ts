@@ -5,7 +5,7 @@ import { BrandingFormData } from '@/types/branding-form';
 export const submitBrandingForm = async (data: BrandingFormData) => {
   console.log('Submitting branding data to Google Sheets:', data);
 
-  const GOOGLE_SHEETS_URL = 'https://sheetdb.io/api/v1/w15c57fnzal66';
+  const GOOGLE_SHEETS_URL = 'https://sheetdb.io/api/v1/py99bvu81b75t';
   
   const now = new Date();
   const istOffset = 5.5 * 60 * 60 * 1000;

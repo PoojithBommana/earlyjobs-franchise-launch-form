@@ -76,6 +76,9 @@ const BrandingForm = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+       <div className='text-center' style={{display: "flex", justifyContent: "center", alignItems: "center"}}>
+      <img src ="/early-jobs-logo.png" style={{height: "150px", width: "150px" , marginLeft:"10px"}}/>
+      </div>
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-8">
@@ -92,7 +95,7 @@ const BrandingForm = () => {
               {/* Section A: Franchise Identification & Shipping Details */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Section A: Franchise Identification & Shipping Details</CardTitle>
+                  <CardTitle>Franchise Identification & Shipping Details</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <FormField
@@ -200,7 +203,7 @@ const BrandingForm = () => {
               {/* Section B: Office Branding Setup Details */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Section B: Office Branding Setup Details</CardTitle>
+                  <CardTitle>Office Branding Setup Details</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <FormField
@@ -434,7 +437,7 @@ const BrandingForm = () => {
               {/* Section C: Brand Personalization Details */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Section C: Brand Personalization Details</CardTitle>
+                  <CardTitle>Brand Personalization Details</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <FormField
@@ -634,7 +637,7 @@ const BrandingForm = () => {
               {/* Section D: Optional Local Print Support */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Section D: Optional (Local Print Support)</CardTitle>
+                  <CardTitle> Optional (Local Print Support)</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <FormField
@@ -770,7 +773,7 @@ const BrandingForm = () => {
                 <Button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full md:w-auto px-8 py-3 text-lg"
+                  className="w-full md:w-auto px-8 py-3 text-lg" style={{backgroundColor:"orange"}}
                 >
                   {isSubmitting ? (
                     <>

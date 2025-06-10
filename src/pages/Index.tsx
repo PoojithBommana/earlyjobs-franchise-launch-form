@@ -21,7 +21,7 @@ const Index = () => {
           <Card className="hover:shadow-lg transition-shadow">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Building className="h-5 w-5 text-blue-600" />
+                <Building className="h-5 w-5 text-orange-600" />
                 Franchise Setup
               </CardTitle>
             </CardHeader>
@@ -40,7 +40,7 @@ const Index = () => {
           <Card className="hover:shadow-lg transition-shadow border-blue-200 bg-blue-50">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5 text-blue-600" />
+                <FileText className="h-5 w-5 text-orange-600" />
                 Activation Form
               </CardTitle>
             </CardHeader>
@@ -49,7 +49,7 @@ const Index = () => {
                 Complete your franchise activation confirmation form to proceed with launch.
               </p>
               <Link to="/earlyjobs/franchise-activation-form">
-                <Button className="w-full bg-blue-600 hover:bg-blue-700">
+                <Button className="w-full bg-orange-600 hover:bg-orange-700">
                   Start Activation Form
                 </Button>
               </Link>
@@ -59,7 +59,7 @@ const Index = () => {
           <Card className="hover:shadow-lg transition-shadow">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <CheckCircle className="h-5 w-5 text-blue-600" />
+                <CheckCircle className="h-5 w-5 text-orange-600" />
                 Launch Support
               </CardTitle>
             </CardHeader>
@@ -73,7 +73,7 @@ const Index = () => {
                 ✓ Ongoing support
               </div>
               <Link to="/earlyjobs/branding-form">
-                <Button variant="outline" className="w-full border-blue-600 text-blue-600 hover:bg-blue-50">
+                <Button variant="outline" className="w-full border-orange-600 text-white  bg-orange-500">
                   <Palette className="h-4 w-4 mr-2" />
                   Branding Form
                 </Button>
@@ -82,32 +82,7 @@ const Index = () => {
           </Card>
         </div>
 
-        <div className="mt-12 text-center">
-          <Card className="max-w-2xl mx-auto">
-            <CardContent className="pt-6">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">
-                Ready to Launch Your Franchise?
-              </h2>
-              <p className="text-gray-600 mb-6">
-                Complete the franchise activation form at least 7 days before your planned launch date. 
-                This ensures all requirements are met and your franchise is ready for a successful opening.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link to="/earlyjobs/franchise-activation-form">
-                  <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3">
-                    Complete Activation Form
-                  </Button>
-                </Link>
-                <Link to="/earlyjobs/branding-form">
-                  <Button size="lg" variant="outline" className="border-blue-600 text-blue-600 hover:bg-blue-50 px-8 py-3">
-                    <Palette className="h-4 w-4 mr-2" />
-                    Branding Form
-                  </Button>
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        
       </div>
     </div>
   );
