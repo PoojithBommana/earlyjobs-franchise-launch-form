@@ -23,8 +23,8 @@ const DocumentsChecklist: React.FC<DocumentsChecklistProps> = ({ form }) => {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <FileText className="h-5 w-5 text-blue-600" />
-          Section D: Documents Checklist
+          <FileText className="h-5 w-5 text-orange-600" />
+        Documents Checklist
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -97,8 +97,15 @@ const DocumentsChecklist: React.FC<DocumentsChecklistProps> = ({ form }) => {
                                         supportDrives: true,
                                         multiselect: false,
                                         callbackFunction: (data) => {
+                                          console.log("Picker data:", data);
                                           if (data.action === 'picked' && data.docs?.[0]) {
                                             const fileId = data.docs[0].id;
+                                                console.log("fileId:", fileId);
+                                                const linkOut = `https://drive.google.com/file/d/${fileId}/view?usp=sharing`;
+                                                console.log("Link Out:", linkOut);
+                                                console.log("schemaKey:", documentsList);
+                                                form.setValue(`documents.${schemaKey}.driveLink`, linkOut)
+
                                             fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?fields=permissions`, {
                                               headers: {
                                                 Authorization: `Bearer ${data.oauthToken || window.google.accounts.oauth2.getAccessToken()}`,
@@ -111,7 +118,7 @@ const DocumentsChecklist: React.FC<DocumentsChecklistProps> = ({ form }) => {
                                                 );
 
                                                 const shareableLink = `https://drive.google.com/file/d/${fileId}/view?usp=sharing`;
-                                                console.log("fileId:", fileId);
+                                                console.log("Shareable Link:", shareableLink, "isShared:", isShared);
                                                 if (!isShared) {
                                                   fetch(`https://www.googleapis.com/drive/v3/files/${fileId}/permissions`, {
                                                     method: 'POST',

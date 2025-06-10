@@ -5,7 +5,7 @@ import { FormData } from '@/types/franchise-form';
 export const submitToGoogleSheets = async (data: FormData) => {
   console.log('Submitting data to Google Sheets:', data);
 
-  const GOOGLE_SHEETS_URL = 'https://sheetdb.io/api/v1/tz2ek2232veh1';
+  const GOOGLE_SHEETS_URL = 'https://sheetdb.io/api/v1/w15c57fnzal66';
   
   const now = new Date();
   const istOffset = 5.5 * 60 * 60 * 1000;
@@ -19,7 +19,7 @@ export const submitToGoogleSheets = async (data: FormData) => {
     "Opening Date": data.openingDate ? format(data.openingDate, 'MM/dd/yyyy') : '',
     "Office Address": data.officeAddress,
     "Office Area": data.officeArea === 'other' ? data.customArea || "Not specified" : data.officeArea,
-    "Setup Type": data.setupType,
+    "Setup Type": data.setupType,                                      
     "Infrastructure [JSON]": JSON.stringify(data.infrastructure),
     "SPOC Name": data.spocName,
     "SPOC Mobile": data.spocMobile,

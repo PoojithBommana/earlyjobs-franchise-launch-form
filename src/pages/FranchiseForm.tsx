@@ -108,7 +108,11 @@ const FranchiseForm = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8 px-4">
+      <div className='text-center' style={{display: "flex", justifyContent: "center", alignItems: "center"}}>
+      <img src ="/early-jobs-logo.png" style={{height: "150px", width: "150px" , marginLeft:"10px"}}/>
+      </div>
       <div className="max-w-4xl mx-auto">
+        
         <div className="text-center mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
             Earlyjobs Franchise Activation
@@ -127,8 +131,8 @@ const FranchiseForm = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Building className="h-5 w-5 text-blue-600" />
-                  Section A: Franchise Identification
+                  <Building className="h-5 w-5 text-orange-600" />
+                 Franchise Identification
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -222,8 +226,8 @@ const FranchiseForm = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <MapPin className="h-5 w-5 text-blue-600" />
-                  Section B: Office Readiness
+                  <MapPin className="h-5 w-5 text-orange-600" />
+                 Office Readiness
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -359,8 +363,8 @@ const FranchiseForm = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5 text-blue-600" />
-                  Section C: SPOC & Communication
+                  <Users className="h-5 w-5 text-orange-600" />
+                SPOC & Communication
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -428,8 +432,8 @@ const FranchiseForm = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <CheckCircle className="h-5 w-5 text-blue-600" />
-                  Section E: Final Declarations
+                  <CheckCircle className="h-5 w-5 text-orange-600" />
+               Final Declarations
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -557,7 +561,7 @@ const FranchiseForm = () => {
                 type="submit"
                 size="lg"
                 disabled={isSubmitting}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg font-semibold"
+                className="bg-orange-600 hover:bg-blue-700 text-white px-8 py-3 text-lg font-semibold"
               >
                 {isSubmitting ? (
                   <>
