@@ -1,9 +1,18 @@
+// FranchiseForm.jsx
 
-import React, { useState } from 'react';
+// Add global declarations for Google Picker and gapi
+declare global {
+  interface Window {
+    google: any;
+    gapi: any;
+  }
+}
+
+import React, { useState, useCallback, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Calendar, MapPin, Building, Users, FileText, CheckCircle, Upload, Loader2 } from 'lucide-react';
+import { Calendar, MapPin, Building, Users, FileText, CheckCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -18,14 +27,36 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
+// Define a schema for each document to conditionally validate the driveLink
+const documentSchema = z.object({
+  status: z.enum(['submitted', 'pending']),
+  driveLink: z.string().optional(), // Allow empty strings, validate URL format later
+}).refine(
+  (data) => {
+    if (data.status === 'submitted') {
+      return true; // No driveLink needed for submitted status
+    }
+    if (data.status === 'pending' && !data.driveLink) {
+      return false; // Require driveLink if pending and empty
+    }
+    if (data.status === 'pending' && data.driveLink) {
+      // Validate URL format only if driveLink is non-empty
+      const urlRegex = /^https?:\/\/(www\.)?drive\.google\.com\/file\/d\/[a-zA-Z0-9_-]+\/view\?usp=sharing$/;
+      return urlRegex.test(data.driveLink);
+    }
+    return true;
+  },
+  {
+    message: 'A valid Google Drive shareable link is required when status is pending (e.g., https://drive.google.com/file/d/{fileId}/view?usp=sharing)',
+    path: ['driveLink'],
+  }
+);
+
 const formSchema = z.object({
-  // Section A
   franchiseeName: z.string().min(2, 'Full name is required'),
   businessName: z.string().optional(),
   franchiseLocation: z.string().min(2, 'Location is required'),
   openingDate: z.date({ required_error: 'Opening date is required' }),
-  
-  // Section B
   officeAddress: z.string().min(10, 'Complete address is required'),
   officeArea: z.enum(['250-300', '300-400', 'other']),
   customArea: z.string().optional(),
@@ -37,44 +68,155 @@ const formSchema = z.object({
     cctv: z.boolean(),
     branding: z.boolean(),
   }),
-  
-  // Section C
   spocName: z.string().min(2, 'SPOC name is required'),
   spocMobile: z.string().regex(/^[6-9]\d{9}$/, 'Valid mobile number required'),
   spocEmail: z.string().email('Valid email required'),
   alternateContact: z.string().optional(),
-  
-  // Section D
   documents: z.object({
-    aadhaarPan: z.enum(['submitted', 'pending']),
-    photograph: z.enum(['submitted', 'pending']),
-    businessReg: z.enum(['submitted', 'pending']),
-    cheque: z.enum(['submitted', 'pending']),
-    rental: z.enum(['submitted', 'pending']),
-    electricity: z.enum(['submitted', 'pending']),
-    background: z.enum(['submitted', 'pending']),
-    agreement: z.enum(['submitted', 'pending']),
-    fdd: z.enum(['submitted', 'pending']),
-    panCopy: z.enum(['submitted', 'pending']),
-    secondaryId: z.enum(['submitted', 'pending']),
+    aadhaarPan: documentSchema,
+    photograph: documentSchema,
+    businessReg: documentSchema,
+    cheque: documentSchema,
+    rental: documentSchema,
+    electricity: documentSchema,
+    background: documentSchema,
+    agreement: documentSchema,
+    fdd: documentSchema,
+    panCopy: documentSchema,
+    secondaryId: documentSchema,
   }),
-  
-  // Section E
   readinessConfirm: z.enum(['yes', 'not-yet']),
   notReadyReason: z.string().optional(),
   declaration: z.boolean().refine(val => val === true, 'Declaration must be accepted'),
   submissionDate: z.date({ required_error: 'Submission date is required' }),
   signature: z.string().min(2, 'Signature is required'),
-});
+}).refine(
+  (data) => data.officeArea !== 'other' || (data.officeArea === 'other' && data.customArea && data.customArea.length > 0),
+  {
+    message: 'Custom area must be specified when "Other" is selected',
+    path: ['customArea'],
+  }
+).refine(
+  (data) => data.readinessConfirm !== 'not-yet' || (data.readinessConfirm === 'not-yet' && data.notReadyReason && data.notReadyReason.length > 0),
+  {
+    message: 'Reason must be provided when not ready',
+    path: ['notReadyReason'],
+  }
+);
 
 type FormData = z.infer<typeof formSchema>;
+
+/**
+ * Loads the Google Picker API and opens the picker dialog.
+ * @param options Picker options and callback.
+ * @param toast Toast function to display errors.
+ */
+function openPicker(
+  options: {
+    clientId: string;
+    developerKey: string;
+    viewId?: string;
+    showUploadView?: boolean;
+    showUploadFolders?: boolean;
+    supportDrives?: boolean;
+    multiselect?: boolean;
+    callbackFunction: (data: any) => void;
+  },
+  toast: (props: { title: string; description: string; variant?: 'default' | 'destructive' }) => void
+) {
+  // Ensure Google API scripts are loaded
+  function loadGoogleApis() {
+    return new Promise<void>((resolve, reject) => {
+      if (window.gapi && window.google && window.google.picker) {
+        resolve();
+      } else {
+        const script1 = document.createElement('script');
+        script1.src = 'https://apis.google.com/js/api.js';
+        script1.async = true;
+        script1.onload = () => {
+          const script2 = document.createElement('script');
+          script2.src = 'https://accounts.google.com/gsi/client';
+          script2.async = true;
+          script2.onload = () => resolve();
+          script2.onerror = () => reject(new Error('Failed to load Google Identity Services script'));
+          document.body.appendChild(script2);
+        };
+        script1.onerror = () => reject(new Error('Failed to load Google API script'));
+        document.body.appendChild(script1);
+      }
+    });
+  }
+
+  // Initialize gapi and authenticate
+  function initializeGapiAndAuthenticate() {
+    return new Promise<string>((resolve, reject) => {
+      window.gapi.load('client:picker', {
+        callback: () => {
+          // Initialize Google Identity Services
+          const tokenClient = window.google.accounts.oauth2.initTokenClient({
+            client_id: options.clientId,
+            scope: 'https://www.googleapis.com/auth/drive.readonly',
+            callback: (response: any) => {
+              if (response.error) {
+                reject(new Error(`Authentication failed: ${response.error}`));
+              } else {
+                resolve(response.access_token);
+              }
+            },
+          });
+
+          // Request an access token
+          tokenClient.requestAccessToken({ prompt: '' });
+        },
+      });
+    });
+  }
+
+  // Create and show the picker
+  function createPicker(oauthToken: string) {
+    const view = new window.google.picker.DocsView(window.google.picker.ViewId[options.viewId || 'DOCS'])
+      .setIncludeFolders(true)
+      .setSelectFolderEnabled(!!options.showUploadFolders);
+
+    let pickerBuilder = new window.google.picker.PickerBuilder()
+      .setAppId(options.clientId.split('-')[0])
+      .setOAuthToken(oauthToken)
+      .setDeveloperKey(options.developerKey)
+      .addView(view)
+      .setCallback(options.callbackFunction);
+
+    if (options.showUploadView) {
+      pickerBuilder = pickerBuilder.addView(new window.google.picker.DocsUploadView());
+    }
+    if (options.multiselect) {
+      pickerBuilder = pickerBuilder.enableFeature(window.google.picker.Feature.MULTISELECT_ENABLED);
+    }
+    if (options.supportDrives) {
+      pickerBuilder = pickerBuilder.enableFeature(window.google.picker.Feature.SUPPORT_DRIVES);
+    }
+
+    pickerBuilder.build().setVisible(true);
+  }
+
+  // Main execution flow
+  loadGoogleApis()
+    .then(() => initializeGapiAndAuthenticate())
+    .then((oauthToken) => createPicker(oauthToken))
+    .catch((error) => {
+      toast({
+        title: 'Error',
+        description: `Failed to initialize Google Picker: ${error.message}`,
+        variant: 'destructive',
+      });
+    });
+}
 
 const FranchiseForm = () => {
   const { toast } = useToast();
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [uploadedFiles, setUploadedFiles] = useState<Record<string, File[]>>({});
-  
+  const [error, setError] = useState<string | null>(null);
+
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -86,137 +228,174 @@ const FranchiseForm = () => {
         branding: false,
       },
       documents: {
-        aadhaarPan: 'pending',
-        photograph: 'pending',
-        businessReg: 'pending',
-        cheque: 'pending',
-        rental: 'pending',
-        electricity: 'pending',
-        background: 'pending',
-        agreement: 'pending',
-        fdd: 'pending',
-        panCopy: 'pending',
-        secondaryId: 'pending',
+        aadhaarPan: { status: 'pending', driveLink: '' },
+        photograph: { status: 'pending', driveLink: '' },
+        businessReg: { status: 'pending', driveLink: '' },
+        cheque: { status: 'pending', driveLink: '' },
+        rental: { status: 'pending', driveLink: '' },
+        electricity: { status: 'pending', driveLink: '' },
+        background: { status: 'pending', driveLink: '' },
+        agreement: { status: 'pending', driveLink: '' },
+        fdd: { status: 'pending', driveLink: '' },
+        panCopy: { status: 'pending', driveLink: '' },
+        secondaryId: { status: 'pending', driveLink: '' },
       },
       declaration: false,
     },
   });
 
-  const handleFileUpload = (docKey: string, files: FileList | null) => {
-    if (files && files.length > 0) {
-      const fileArray = Array.from(files);
-      const validFiles = fileArray.filter(file => {
-        const isValidType = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'].includes(file.type);
-        const isValidSize = file.size <= 10 * 1024 * 1024; // 10MB limit
-        return isValidType && isValidSize;
-      });
+  const submitToGoogleSheets = useCallback(async (data: Record<string, any>) => {
+    console.log('Submitting data to Google Sheets:', data);
 
-      if (validFiles.length > 0) {
-        setUploadedFiles(prev => ({
-          ...prev,
-          [docKey]: validFiles
-        }));
-        toast({
-          title: "Files uploaded",
-          description: `${validFiles.length} file(s) uploaded successfully.`,
-        });
-      } else {
-        toast({
-          title: "Invalid files",
-          description: "Please upload valid PDF, JPG, or PNG files under 10MB.",
-          variant: "destructive",
-        });
-      }
-    }
-  };
-
-  const submitToGoogleSheets = async (data: FormData) => {
-    // Mock Google Apps Script Web App URL - replace with actual URL
-    const GOOGLE_SHEETS_URL = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec';
-    
+    const GOOGLE_SHEETS_URL = 'https://sheetdb.io/api/v1/tz2ek2232veh1';
     try {
-      // Prepare form data with files
-      const formDataToSend = new FormData();
-      
-      // Add all form fields
-      Object.entries(data).forEach(([key, value]) => {
-        if (typeof value === 'object' && value instanceof Date) {
-          formDataToSend.append(key, value.toISOString());
-        } else if (typeof value === 'object' && value !== null) {
-          formDataToSend.append(key, JSON.stringify(value));
-        } else {
-          formDataToSend.append(key, String(value));
-        }
-      });
+      const now = new Date();
+      const istOffset = 5.5 * 60 * 60 * 1000;
+      const istTime = new Date(now.getTime() + istOffset);
+      const formattedIST = format(istTime, "EEE, MMMM dd, yyyy, hh:mm a 'IST'");
 
-      // Add uploaded files
-      Object.entries(uploadedFiles).forEach(([docKey, files]) => {
-        files.forEach((file, index) => {
-          formDataToSend.append(`${docKey}_file_${index}`, file);
-        });
-      });
+      const transformedData = {
+        "Franchisee Name": data.franchiseeName,
+        "Business Name": data.businessName || "",
+        "Franchise Location": data.franchiseLocation,
+        "Opening Date": data.openingDate ? format(data.openingDate, 'MM/dd/yyyy') : '',
+        "Office Address": data.officeAddress,
+        "Office Area": data.officeArea === 'other' ? data.customArea || "Not specified" : data.officeArea,
+        "Setup Type": data.setupType,
+        "Infrastructure [JSON]": JSON.stringify(data.infrastructure),
+        "SPOC Name": data.spocName,
+        "SPOC Mobile": data.spocMobile,
+        "SPOC Email": data.spocEmail,
+        "Alternate Contact": data.alternateContact || "",
+        "Documents Status [JSON]": JSON.stringify(data.documents),
+        "Readiness Confirmation": data.readinessConfirm,
+        "Not Ready Reason": data.notReadyReason || "",
+        "Submission Date": data.submissionDate ? format(data.submissionDate, 'MM/dd/yyyy') : '',
+        "Signature": data.signature,
+        "Additional Info 1": "",
+        "Additional Info 2": "",
+        "Form Filled At": formattedIST,
+        "Aadhaar/PAN of Owner": data.documents.aadhaarPan.status === 'pending' ? (data.documents.aadhaarPan.driveLink || "Not provided") : "Submitted",
+        "Passport-size Photograph": data.documents.photograph.status === 'pending' ? (data.documents.photograph.driveLink || "Not provided") : "Submitted",
+        "Business Registration (GST/Udyam)": data.documents.businessReg.status === 'pending' ? (data.documents.businessReg.driveLink || "Not provided") : "Submitted",
+        "Cancelled Cheque/Passbook Copy": data.documents.cheque.status === 'pending' ? (data.documents.cheque.driveLink || "Not provided") : "Submitted",
+        "Rental Agreement or Property Proof": data.documents.rental.status === 'pending' ? (data.documents.rental.driveLink || "Not provided") : "Submitted",
+        "Latest Electricity Bill": data.documents.electricity.status === 'pending' ? (data.documents.electricity.driveLink || "Not provided") : "Submitted",
+        "Background Clearance Declaration": data.documents.background.status === 'pending' ? (data.documents.background.driveLink || "Not provided") : "Submitted",
+        "Signed Franchise Agreement": data.documents.agreement.status === 'pending' ? (data.documents.agreement.driveLink || "Not provided") : "Submitted",
+        "Signed FDD Acknowledgement": data.documents.fdd.status === 'pending' ? (data.documents.fdd.driveLink || "Not provided") : "Submitted",
+        "PAN Card Copy": data.documents.panCopy.status === 'pending' ? (data.documents.panCopy.driveLink || "Not provided") : "Submitted",
+        "Secondary ID (DL/Passport/Voter ID)": data.documents.secondaryId.status === 'pending' ? (data.documents.secondaryId.driveLink || "Not provided") : "Submitted",
+      };
 
-      console.log('Submitting to Google Sheets...');
-      
-      // For now, simulate the API call since we don't have a real Google Sheets endpoint
-      const response = await fetch('/api/mock-submit', {
+      const response = await fetch(GOOGLE_SHEETS_URL, {
         method: 'POST',
-        body: formDataToSend,
-      }).catch(() => {
-        // Simulate successful submission for demo
-        return { ok: true, json: () => Promise.resolve({ success: true }) };
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ data: [transformedData] }),
       });
 
-      if (response.ok) {
-        return { success: true };
-      } else {
-        throw new Error('Failed to submit to Google Sheets');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(`Submission failed: ${response.status} - ${response.statusText}. Details: ${JSON.stringify(errorData)}`);
       }
-    } catch (error) {
-      console.error('Error submitting to Google Sheets:', error);
-      throw error;
-    }
-  };
 
-  const onSubmit = async (data: FormData) => {
+      return { success: true };
+    } catch (error) {
+      console.error('Google Sheets submission error:', error);
+      throw error instanceof Error ? error : new Error('Failed to submit to Google Sheets');
+    }
+  }, []);
+
+  const onSubmit = useCallback(async (data: FormData) => {
     setIsSubmitting(true);
-    
+    setError(null);
+
     try {
-      console.log('Form submitted:', data);
-      console.log('Uploaded files:', uploadedFiles);
-      
-      await submitToGoogleSheets(data);
-      
+      const result = await submitToGoogleSheets(data);
+      if (!result.success) {
+        throw new Error('Submission failed');
+      }
+
       setShowSuccessMessage(true);
+      form.reset();
       toast({
         title: "Form Submitted Successfully!",
-        description: "Your franchise activation form has been submitted to Earlyjobs and saved to Google Sheets.",
+        description: "Your franchise activation form has been submitted.",
       });
     } catch (error) {
-      console.error('Submission error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+      setError(errorMessage);
       toast({
         title: "Submission Failed",
-        description: "There was an error submitting your form. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [form, toast, submitToGoogleSheets]);
 
-  const documentsList = [
-    { key: 'aadhaarPan', label: 'Aadhaar/PAN of Owner' },
-    { key: 'photograph', label: 'Passport-size Photograph' },
-    { key: 'businessReg', label: 'Business Registration (GST/Udyam)' },
-    { key: 'cheque', label: 'Cancelled Cheque/Passbook Copy' },
-    { key: 'rental', label: 'Rental Agreement or Property Proof' },
-    { key: 'electricity', label: 'Latest Electricity Bill' },
-    { key: 'background', label: 'Background Clearance Declaration' },
-    { key: 'agreement', label: 'Signed Franchise Agreement' },
-    { key: 'fdd', label: 'Signed FDD Acknowledgement' },
-    { key: 'panCopy', label: 'PAN Card Copy' },
-    { key: 'secondaryId', label: 'Secondary ID (DL/Passport/Voter ID)' },
+  const onError = useCallback((errors: any) => {
+    console.error('Form validation errors:', errors);
+    toast({
+      title: "Validation Error",
+      description: "Please check the form for errors and fill all required fields.",
+      variant: "destructive",
+    });
+  }, [toast]);
+
+  useEffect(() => {
+    if (error) {
+      toast({
+        title: "Error",
+        description: error,
+        variant: "destructive",
+      });
+    }
+  }, [error, toast]);
+
+  type DocumentKey =
+    | 'Aadhaar/PAN of Owner'
+    | 'Passport-size Photograph'
+    | 'Business Registration (GST/Udyam)'
+    | 'Cancelled Cheque/Passbook Copy'
+    | 'Rental Agreement or Property Proof'
+    | 'Latest Electricity Bill'
+    | 'Background Clearance Declaration'
+    | 'Signed Franchise Agreement'
+    | 'Signed FDD Acknowledgement'
+    | 'PAN Card Copy'
+    | 'Secondary ID (DL/Passport/Voter ID)';
+
+  const documentsList: { key: DocumentKey; label: string }[] = [
+    { key: 'Aadhaar/PAN of Owner', label: 'Aadhaar/PAN of Owner' },
+    { key: 'Passport-size Photograph', label: 'Passport-size Photograph' },
+    { key: 'Business Registration (GST/Udyam)', label: 'Business Registration (GST/Udyam)' },
+    { key: 'Cancelled Cheque/Passbook Copy', label: 'Cancelled Cheque/Passbook Copy' },
+    { key: 'Rental Agreement or Property Proof', label: 'Rental Agreement or Property Proof' },
+    { key: 'Latest Electricity Bill', label: 'Latest Electricity Bill' },
+    { key: 'Background Clearance Declaration', label: 'Background Clearance Declaration' },
+    { key: 'Signed Franchise Agreement', label: 'Signed Franchise Agreement' },
+    { key: 'Signed FDD Acknowledgement', label: 'Signed FDD Acknowledgement' },
+    { key: 'PAN Card Copy', label: 'PAN Card Copy' },
+    { key: 'Secondary ID (DL/Passport/Voter ID)', label: 'Secondary ID (DL/Passport/Voter ID)' },
   ];
+
+  const documentKeyMap: Record<DocumentKey, keyof FormData['documents']> = {
+    'Aadhaar/PAN of Owner': 'aadhaarPan',
+    'Passport-size Photograph': 'photograph',
+    'Business Registration (GST/Udyam)': 'businessReg',
+    'Cancelled Cheque/Passbook Copy': 'cheque',
+    'Rental Agreement or Property Proof': 'rental',
+    'Latest Electricity Bill': 'electricity',
+    'Background Clearance Declaration': 'background',
+    'Signed Franchise Agreement': 'agreement',
+    'Signed FDD Acknowledgement': 'fdd',
+    'PAN Card Copy': 'panCopy',
+    'Secondary ID (DL/Passport/Voter ID)': 'secondaryId',
+  };
 
   if (showSuccessMessage) {
     return (
@@ -226,8 +405,7 @@ const FranchiseForm = () => {
             <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Success!</h2>
             <p className="text-gray-600 mb-6">
-              Your franchise activation form has been successfully submitted to Earlyjobs and saved to Google Sheets.
-              You will receive a confirmation email shortly.
+              Your franchise activation form has been successfully submitted.
             </p>
             <Button onClick={() => setShowSuccessMessage(false)} className="w-full">
               Submit Another Form
@@ -241,7 +419,6 @@ const FranchiseForm = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8 px-4">
       <div className="max-w-4xl mx-auto">
-        {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
             Earlyjobs Franchise Activation
@@ -255,9 +432,7 @@ const FranchiseForm = () => {
         </div>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-            
-            {/* Section A: Franchise Identification */}
+          <form onSubmit={form.handleSubmit(onSubmit, onError)} className="space-y-8">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -280,7 +455,6 @@ const FranchiseForm = () => {
                       </FormItem>
                     )}
                   />
-                  
                   <FormField
                     control={form.control}
                     name="businessName"
@@ -295,7 +469,6 @@ const FranchiseForm = () => {
                     )}
                   />
                 </div>
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
@@ -310,7 +483,6 @@ const FranchiseForm = () => {
                       </FormItem>
                     )}
                   />
-
                   <FormField
                     control={form.control}
                     name="openingDate"
@@ -355,7 +527,6 @@ const FranchiseForm = () => {
               </CardContent>
             </Card>
 
-            {/* Section B: Office Readiness */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -371,17 +542,16 @@ const FranchiseForm = () => {
                     <FormItem>
                       <FormLabel>Office Address *</FormLabel>
                       <FormControl>
-                        <Textarea 
+                        <Textarea
                           placeholder="Enter complete office address with pincode"
                           className="min-h-[80px]"
-                          {...field} 
+                          {...field}
                         />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <FormField
                     control={form.control}
@@ -413,7 +583,6 @@ const FranchiseForm = () => {
                       </FormItem>
                     )}
                   />
-
                   {form.watch('officeArea') === 'other' && (
                     <FormField
                       control={form.control}
@@ -429,7 +598,6 @@ const FranchiseForm = () => {
                       )}
                     />
                   )}
-
                   <FormField
                     control={form.control}
                     name="setupType"
@@ -461,7 +629,6 @@ const FranchiseForm = () => {
                     )}
                   />
                 </div>
-
                 <div>
                   <Label className="text-base font-semibold mb-4 block">Office Infrastructure</Label>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -475,7 +642,7 @@ const FranchiseForm = () => {
                       <FormField
                         key={item.key}
                         control={form.control}
-                        name={`infrastructure.${item.key}` as any}
+                        name={`infrastructure.${item.key}` as `infrastructure.${keyof FormData['infrastructure']}`}
                         render={({ field }) => (
                           <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                             <FormControl>
@@ -496,7 +663,6 @@ const FranchiseForm = () => {
               </CardContent>
             </Card>
 
-            {/* Section C: SPOC & Communication */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -519,7 +685,6 @@ const FranchiseForm = () => {
                       </FormItem>
                     )}
                   />
-
                   <FormField
                     control={form.control}
                     name="spocMobile"
@@ -533,7 +698,6 @@ const FranchiseForm = () => {
                       </FormItem>
                     )}
                   />
-
                   <FormField
                     control={form.control}
                     name="spocEmail"
@@ -548,7 +712,6 @@ const FranchiseForm = () => {
                     )}
                   />
                 </div>
-
                 <FormField
                   control={form.control}
                   name="alternateContact"
@@ -565,7 +728,6 @@ const FranchiseForm = () => {
               </CardContent>
             </Card>
 
-            {/* Section D: Documents Checklist */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -575,84 +737,174 @@ const FranchiseForm = () => {
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
-                  <table className="w-full border-collapse">
+                  <table className="min-w-full border text-xs">
                     <thead>
-                      <tr className="border-b">
-                        <th className="text-left py-3 px-2 font-semibold">Document</th>
-                        <th className="text-center py-3 px-2 font-semibold w-32">Status</th>
-                        <th className="text-center py-3 px-2 font-semibold w-48">Upload</th>
+                      <tr>
+                        <th className="border px-2 py-1">Document</th>
+                        <th className="border px-2 py-1">Status</th>
+                        <th className="border px-2 py-1">Google Drive Link</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {documentsList.map((doc) => (
-                        <tr key={doc.key} className="border-b">
-                          <td className="py-3 px-2 text-sm">{doc.label}</td>
-                          <td className="py-3 px-2">
-                            <FormField
-                              control={form.control}
-                              name={`documents.${doc.key}` as any}
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormControl>
-                                    <RadioGroup
-                                      onValueChange={field.onChange}
-                                      defaultValue={field.value}
-                                      className="flex justify-center space-x-4"
-                                    >
-                                      <div className="flex items-center space-x-1">
-                                        <RadioGroupItem value="submitted" id={`${doc.key}-submitted`} />
-                                        <Label htmlFor={`${doc.key}-submitted`} className="text-xs">Submitted</Label>
-                                      </div>
-                                      <div className="flex items-center space-x-1">
-                                        <RadioGroupItem value="pending" id={`${doc.key}-pending`} />
-                                        <Label htmlFor={`${doc.key}-pending`} className="text-xs">Pending</Label>
-                                      </div>
-                                    </RadioGroup>
-                                  </FormControl>
-                                </FormItem>
-                              )}
-                            />
-                          </td>
-                          <td className="py-3 px-2">
-                            {form.watch(`documents.${doc.key}` as any) === 'pending' && (
-                              <div className="flex flex-col items-center space-y-2">
-                                <div className="relative">
-                                  <Input
-                                    type="file"
-                                    accept=".pdf,.jpg,.jpeg,.png"
-                                    multiple
-                                    onChange={(e) => handleFileUpload(doc.key, e.target.files)}
-                                    className="hidden"
-                                    id={`file-${doc.key}`}
-                                  />
-                                  <Label
-                                    htmlFor={`file-${doc.key}`}
-                                    className="flex items-center justify-center gap-2 cursor-pointer bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-md px-3 py-2 text-xs text-blue-700"
-                                  >
-                                    <Upload className="h-3 w-3" />
-                                    Upload
-                                  </Label>
-                                </div>
-                                {uploadedFiles[doc.key] && uploadedFiles[doc.key].length > 0 && (
-                                  <div className="text-xs text-green-600">
-                                    {uploadedFiles[doc.key].length} file(s) uploaded
-                                  </div>
+                      {documentsList.map((doc) => {
+                        const schemaKey = documentKeyMap[doc.key];
+                        return (
+                          <tr key={doc.key}>
+                            <td className="border px-2 py-1">{doc.label}</td>
+                            <td className="border px-2 py-1">
+                              <FormField
+                                control={form.control}
+                                name={`documents.${schemaKey}.status`}
+                                render={({ field }) => (
+                                  <FormItem>
+                                    <FormControl>
+                                      <RadioGroup
+                                        onValueChange={(value) => {
+                                          field.onChange(value);
+                                          if (value === 'submitted') {
+                                            form.setValue(`documents.${schemaKey}.driveLink`, '');
+                                          }
+                                        }}
+                                        value={field.value}
+                                        className="flex justify-center space-x-4"
+                                      >
+                                        <div className="flex items-center space-x-1">
+                                          <RadioGroupItem value="submitted" id={`${doc.key}-submitted`} />
+                                          <Label htmlFor={`${doc.key}-submitted`} className="text-xs">Submitted</Label>
+                                        </div>
+                                        <div className="flex items-center space-x-1">
+                                          <RadioGroupItem value="pending" id={`${doc.key}-pending`} />
+                                          <Label htmlFor={`${doc.key}-pending`} className="text-xs">Pending</Label>
+                                        </div>
+                                      </RadioGroup>
+                                    </FormControl>
+                                  </FormItem>
                                 )}
-                              </div>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
+                              />
+                            </td>
+                            <td className="border px-2 py-1">
+                              {form.watch(`documents.${schemaKey}.status`) === 'pending' && (
+                                <FormField
+                                  control={form.control}
+                                  name={`documents.${schemaKey}.driveLink`}
+                                  render={({ field }) => (
+                                    <FormItem>
+                                      <FormControl>
+                                        <Button
+                                          type="button"
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => {
+                                            openPicker(
+                                              {
+                                                clientId: "124195828012-nsgud3uee4fovodbpr6132pj4t14fgct.apps.googleusercontent.com",
+                                                developerKey: "AIzaSyD91U-yC_Zak67WzYvwAFWUvzpJCyltPiA",
+                                                viewId: "DOCS",
+                                                showUploadView: true,
+                                                showUploadFolders: true,
+                                                supportDrives: true,
+                                                multiselect: false,
+                                                callbackFunction: (data) => {
+                                                  if (data.action === 'picked' && data.docs?.[0]) {
+                                                    const fileId = data.docs[0].id;
+                                                    // Use the token from the picker authentication
+                                                    fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?fields=permissions`, {
+                                                      headers: {
+                                                        Authorization: `Bearer ${data.oauthToken || window.google.accounts.oauth2.getAccessToken()}`,
+                                                      },
+                                                    })
+                                                      .then((res) => res.json())
+                                                      .then((fileData) => {
+                                                        const isShared = fileData.permissions?.some(
+                                                          (perm) => perm.type === 'anyone' && perm.role !== 'private'
+                                                        );
+
+                                                        const shareableLink = `https://drive.google.com/file/d/${fileId}/view?usp=sharing`;
+                                                        console.log("fileId:", fileId);
+                                                        if (!isShared) {
+                                                          fetch(`https://www.googleapis.com/drive/v3/files/${fileId}/permissions`, {
+                                                            method: 'POST',
+                                                            headers: {
+                                                              Authorization: `Bearer ${data.oauthToken || window.google.accounts.oauth2.getAccessToken()}`,
+                                                              'Content-Type': 'application/json',
+                                                            },
+                                                            body: JSON.stringify({
+                                                              role: 'reader',
+                                                              type: 'anyone',
+                                                            }),
+                                                          })
+                                                            .then(() => {
+                                                              form.setValue(`documents.${schemaKey}.driveLink`, shareableLink, {
+                                                                shouldValidate: true,
+                                                                shouldDirty: true,
+                                                              });
+                                                              toast({
+                                                                title: "File Selected",
+                                                                description: "File permissions updated and link added.",
+                                                              });
+                                                            })
+                                                            .catch((error) => {
+                                                              toast({
+                                                                title: "Permission Error",
+                                                                description: `Failed to set file permissions: ${error.message}`,
+                                                                variant: "destructive",
+                                                              });
+                                                            });
+                                                        } else {
+                                                          form.setValue(`documents.${schemaKey}.driveLink`, shareableLink, {
+                                                            shouldValidate: true,
+                                                            shouldDirty: true,
+                                                          });
+                                                          toast({
+                                                            title: "File Selected",
+                                                            description: "Shareable link added to the form.",
+                                                          });
+                                                        }
+                                                      })
+                                                      .catch((error) => {
+                                                        toast({
+                                                          title: "Drive Error",
+                                                          description: `Failed to fetch permissions: ${error.message}`,
+                                                          variant: "destructive",
+                                                        });
+                                                      });
+                                                  }
+                                                },
+                                              },
+                                              toast
+                                            );
+                                          }}
+                                          className="text-xs"
+                                        >
+                                          Select from Drive
+                                        </Button>
+                                      </FormControl>
+                                      {field.value && (
+                                        <div className="text-xs text-blue-600 mt-1">
+                                          <a href={field.value} target="_blank" rel="noopener noreferrer">
+                                            View Selected File
+                                          </a>
+                                        </div>
+                                      )}
+                                      <FormMessage />
+                                    </FormItem>
+                                  )}
+                                />
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
+
                 <div className="mt-4 text-sm text-gray-500">
-                  <p>* Accepted file formats: PDF, JPG, PNG (Max 10MB per file)</p>
+                  <p>* Click "Select from Drive" to choose a file from Google Drive. A shareable link will be added automatically.</p>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Section E: Final Declarations */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -687,7 +939,6 @@ const FranchiseForm = () => {
                     </FormItem>
                   )}
                 />
-
                 {form.watch('readinessConfirm') === 'not-yet' && (
                   <FormField
                     control={form.control}
@@ -696,9 +947,9 @@ const FranchiseForm = () => {
                       <FormItem>
                         <FormLabel>Reason for not being ready</FormLabel>
                         <FormControl>
-                          <Textarea 
+                          <Textarea
                             placeholder="Please explain why you're not ready to launch"
-                            {...field} 
+                            {...field}
                           />
                         </FormControl>
                         <FormMessage />
@@ -706,7 +957,6 @@ const FranchiseForm = () => {
                     )}
                   />
                 )}
-
                 <FormField
                   control={form.control}
                   name="declaration"
@@ -721,10 +971,10 @@ const FranchiseForm = () => {
                       <FormLabel className="text-sm font-normal">
                         I declare that all the information provided in this form is true and accurate to the best of my knowledge *
                       </FormLabel>
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
@@ -765,7 +1015,6 @@ const FranchiseForm = () => {
                       </FormItem>
                     )}
                   />
-
                   <FormField
                     control={form.control}
                     name="signature"
@@ -783,10 +1032,9 @@ const FranchiseForm = () => {
               </CardContent>
             </Card>
 
-            {/* Submit Button */}
             <div className="text-center">
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 size="lg"
                 disabled={isSubmitting}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg font-semibold"
