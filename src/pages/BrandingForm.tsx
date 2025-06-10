@@ -538,7 +538,7 @@ const BrandingForm = () => {
                       name="regionalLanguage"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Regional Language Preferred for Posters *</FormLabel>
+                          <FormLabel>Regional Language Preferred for Posters (Posters will be printed in this language + English) *</FormLabel>
                           <FormControl>
                             <Select onValueChange={field.onChange} value={field.value}>
                               <SelectTrigger>

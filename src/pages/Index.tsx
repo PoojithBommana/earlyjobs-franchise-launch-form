@@ -7,6 +7,9 @@ import { Building, FileText, CheckCircle, Palette } from 'lucide-react';
 const Index = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className='text-center' style={{display: "flex", justifyContent: "center", alignItems: "center"}}>
+      <img src ="/early-jobs-logo.png" style={{height: "150px", width: "150px" , marginLeft:"10px"}}/>
+      </div>
       <div className="container mx-auto px-4 py-12">
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
@@ -56,26 +59,20 @@ const Index = () => {
             </CardContent>
           </Card>
 
-          <Card className="hover:shadow-lg transition-shadow">
+          <Card className="hover:shadow-lg transition-shadow border-blue-200 bg-blue-50">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <CheckCircle className="h-5 w-5 text-orange-600" />
-                Launch Support
+                Branding Form
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-gray-600 mb-4">
-                Get comprehensive support during your franchise launch process.
+               Complete your franchise activation confirmation form to proceed with launch.
               </p>
-              <div className="text-sm text-gray-500 mb-4">
-                ✓ Pre-launch consultation<br/>
-                ✓ Training modules<br/>
-                ✓ Ongoing support
-              </div>
               <Link to="/earlyjobs/branding-form">
-                <Button variant="outline" className="w-full border-orange-600 text-white  bg-orange-500">
-                  <Palette className="h-4 w-4 mr-2" />
-                  Branding Form
+                <Button className="w-full bg-orange-600 hover:bg-orange-700">
+                  Start Branding Form
                 </Button>
               </Link>
             </CardContent>
