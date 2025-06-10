@@ -2,7 +2,7 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building, FileText, CheckCircle } from 'lucide-react';
+import { Building, FileText, CheckCircle, Palette } from 'lucide-react';
 
 const Index = () => {
   return (
@@ -67,11 +67,17 @@ const Index = () => {
               <p className="text-gray-600 mb-4">
                 Get comprehensive support during your franchise launch process.
               </p>
-              <div className="text-sm text-gray-500">
+              <div className="text-sm text-gray-500 mb-4">
                 ✓ Pre-launch consultation<br/>
                 ✓ Training modules<br/>
                 ✓ Ongoing support
               </div>
+              <Link to="/earlyjobs/branding-form">
+                <Button variant="outline" className="w-full border-blue-600 text-blue-600 hover:bg-blue-50">
+                  <Palette className="h-4 w-4 mr-2" />
+                  Branding Form
+                </Button>
+              </Link>
             </CardContent>
           </Card>
         </div>
@@ -86,11 +92,19 @@ const Index = () => {
                 Complete the franchise activation form at least 7 days before your planned launch date. 
                 This ensures all requirements are met and your franchise is ready for a successful opening.
               </p>
-              <Link to="/earlyjobs/franchise-activation-form">
-                <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3">
-                  Complete Activation Form
-                </Button>
-              </Link>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link to="/earlyjobs/franchise-activation-form">
+                  <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3">
+                    Complete Activation Form
+                  </Button>
+                </Link>
+                <Link to="/earlyjobs/branding-form">
+                  <Button size="lg" variant="outline" className="border-blue-600 text-blue-600 hover:bg-blue-50 px-8 py-3">
+                    <Palette className="h-4 w-4 mr-2" />
+                    Branding Form
+                  </Button>
+                </Link>
+              </div>
             </CardContent>
           </Card>
         </div>
