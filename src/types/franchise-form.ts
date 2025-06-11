@@ -4,27 +4,8 @@ import { z } from 'zod';
 // Define a schema for each document to conditionally validate the driveLink
 const documentSchema = z.object({
   status: z.enum(['submitted', 'pending']),
-  driveLink: z.string().optional(), // Allow empty strings, validate URL format later
-}).refine(
-  (data) => {
-    if (data.status === 'submitted') {
-      return true; // No driveLink needed for submitted status
-    }
-    if (data.status === 'pending' && !data.driveLink) {
-      return false; // Require driveLink if pending and empty
-    }
-    if (data.status === 'pending' && data.driveLink) {
-      // Validate URL format only if driveLink is non-empty
-      const urlRegex = /^https?:\/\/(www\.)?drive\.google\.com\/file\/d\/[a-zA-Z0-9_-]+\/view\?usp=sharing$/;
-      return urlRegex.test(data.driveLink);
-    }
-    return true;
-  },
-  {
-    message: 'A valid Google Drive shareable link is required when status is pending (e.g., https://drive.google.com/file/d/{fileId}/view?usp=sharing)',
-    path: ['driveLink'],
-  }
-);
+  driveLink: z.string(), // Allow empty strings, validate URL format later
+})
 
 export const formSchema = z.object({
   franchiseeName: z.string().min(2, 'Full name is required'),
