@@ -19,59 +19,66 @@ import type { FormData } from '@/types/franchise-form';
 import { formSchema } from '@/types/franchise-form';
 import { submitToGoogleSheets } from '@/utils/form-submission';
 import SuccessMessage from '@/components/SuccessMessage';
-
-// DocumentsChecklist Component
-const getCloudinaryUploadURL = (file) => {
-  if (file.type.startsWith("image/")) return "https://api.cloudinary.com/v1_1/dzdzesmvy/image/upload";
-  if (file.type.startsWith("video/")) return "https://api.cloudinary.com/v1_1/dzdzesmvy/video/upload";
-  return "https://api.cloudinary.com/v1_1/dzdzesmvy/raw/upload"; // Default to 'raw' for PDFs, zips, etc.
-};
-
-const uploadToCloudinary = async (file) => {
-  const formData = new FormData();
-  formData.append("file", file);
-  formData.append("upload_preset", "unsigned_upload"); // ✅ Set this in Cloudinary Dashboard (Settings > Upload)
-
-  const url = getCloudinaryUploadURL(file);
-  console.log("Uploading to Cloudinary URL:", file);
-
-  const response = await fetch(url, {
-    method: "POST",
-    body: formData,
-  });
-
-  const data = await response.json();
-
-  console.log("Secure URL:", data.secure_url); // ✅ Public link for use in your app
-  console.log("Public ID:", data.public_id);   // ✅ Useful for managing/deleting in Cloudinary
-
-  return data;
-};
+import type { FieldErrors } from 'react-hook-form';
 
 type FileLink = { url: string; name: string };
+
 const DocumentsChecklist = ({ form }) => {
   const [fileLinks, setFileLinks] = useState<Record<string, FileLink>>({});
+  const { toast } = useToast();
 
-  const handleFileUpload = async(key, event) => {
-    const file = event.target.files[0];
-    if (file) {
-      try {
-        // Generate a temporary shareable link using URL.createObjectURL
-        const shareableLink = await uploadToCloudinary(file);
-        console.log(`File uploaded for ${key}:`, shareableLink);
-        // Update form values
-        form.setValue(`documents.${key}.driveLink`, shareableLink);
-        form.setValue(`documents.${key}.status`, 'pending');
-        // Store link for display
-        setFileLinks((prev) => ({ ...prev, [key]: { url: shareableLink, name: file.name } }));
-      } catch (error) {
-        console.error('File processing error:', error);
-        form.setValue(`documents.${key}.status`, 'submitted');
-      }
+  const handleUploadClick = (key: string) => {
+    const input = document.createElement('input');
+    if (form.getValues('franchiseeName')) {
+      input.type = 'file';
+      input.accept = '.pdf,.jpg,.jpeg,.png';
+      console.log("form.getValues('franchiseeName'):", form.getValues('franchiseeName'));
+      input.onchange = async (event: Event) => {
+        const file = (event.target as HTMLInputElement).files?.[0];
+        if (file) {
+          try {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('userId', form.getValues('franchiseeName') || 'franchiseeName');
+            formData.append('key', key);
+
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/franchise/upload`, {
+              method: 'POST',
+              body: formData,
+            });
+
+            if (!response.ok) {
+              throw new Error(`Upload failed: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            console.log(`File uploaded for ${key}:`, result.webViewLink);
+
+            form.setValue(`documents.${key}.driveLink`, result.webViewLink);
+            form.setValue(`documents.${key}.status`, 'submitted');
+
+            setFileLinks((prev) => ({
+              ...prev,
+              [key]: { url: result.webViewLink, name: file.name },
+            }));
+          } catch (error) {
+            console.error('File upload error:', error);
+            form.setValue(`documents.${key}.status`, 'pending');
+          }
+        }
+      };
     }
+    else {
+      toast({
+        title: "Your Full Name is Required",
+        description: "Please enter your  Full Name",
+        variant: "destructive",
+      });
+      window.scrollTo(0, 0);
+    }
+    input.click();
   };
 
-  // Clean up object URLs when component unmounts to prevent memory leaks
   useEffect(() => {
     return () => {
       Object.values(fileLinks).forEach(({ url }) => {
@@ -80,8 +87,8 @@ const DocumentsChecklist = ({ form }) => {
     };
   }, [fileLinks]);
 
-    useEffect(() => {
-    console.log("DocumentsChecklist mounted with :", form.getValues());
+  useEffect(() => {
+    console.log("DocumentsChecklist mounted with:", form.getValues());
   }, [form]);
 
   const documentFields = [
@@ -111,45 +118,61 @@ const DocumentsChecklist = ({ form }) => {
           <FormField
             key={key}
             control={form.control}
-            name={`documents.${key}`}
+            name={`documents.${key}.status`}
             render={({ field }) => (
-              <FormItem>
-              <FormLabel>{label}</FormLabel>
-                <FormControl>
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="file"
-                        accept=".pdf,.jpg,.jpeg,.png"
-                        onChange={(e) => handleFileUpload(key, e)}
-                        className="w-full"
-                      />
+              <FormItem style={{
+                display: "flex",
+                flexDirection: "column"
+              }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <FormLabel className="text-base font-medium">{label}</FormLabel>
+                  <FormControl>
+                    <div className="flex items-center gap-4">
+                      <RadioGroup
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          form.setValue(`documents.${key}.status`, value);
+                        }}
+                        value={field.value}
+                        className="flex items-center gap-4"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="pending" id={`${key}-pending`} />
+                          <Label htmlFor={`${key}-pending`} className="text-sm font-normal">
+                            Pending
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="submitted" id={`${key}-submitted`} />
+                          <Label htmlFor={`${key}-submitted`} className="text-sm font-normal">
+                            Submitted
+                          </Label>
+                        </div>
+                      </RadioGroup>
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
-                        disabled={field.value.status === 'uploaded'}
+                        onClick={() => handleUploadClick(key)}
+                        disabled={field.value === 'uploaded'}
+                        className="flex items-center gap-2 border-orange-600 text-orange-600 hover:bg-orange-50"
                       >
-                        <Upload className="h-4 w-4 mr-2" />
+                        <Upload className="h-4 w-4" />
                         Upload
                       </Button>
                     </div>
-                    {fileLinks[key] && (
-                      <div className="text-sm text-blue-600">
-                        <a href={fileLinks[key].url} target="_blank" rel="noopener noreferrer">
-                          View uploaded file: {fileLinks[key].name}
-                        </a>
-                      </div>
-                    )}
-                    <a href="https://res.cloudinary.com/dzdzesmvy/raw/upload/v1749635567/yaqeadxm2r08jnfnqayp.pdf" target="_blank">
-  Download Offer Letter
-</a>
-
-                    {field.value.status === 'error' && (
-                      <div className="text-sm text-red-500">Failed to process file</div>
-                    )}
+                  </FormControl>
+                </div>
+                {fileLinks[key] && (
+                  <div className="text-sm text-blue-600 mt-2">
+                    <a href={fileLinks[key].url} target="_blank" rel="noopener noreferrer">
+                      View uploaded file: {fileLinks[key].name}
+                    </a>
                   </div>
-                </FormControl>
+                )}
+                {form.getValues(`documents.${key}.status`) === 'error' && (
+                  <div className="text-sm text-red-500 mt-2">Failed to process file</div>
+                )}
                 <FormMessage />
               </FormItem>
             )}
@@ -223,7 +246,7 @@ const FranchiseForm = () => {
     }
   }, [form, toast]);
 
-  const onError = useCallback((errors: any) => {
+  const onError = useCallback((errors: FieldErrors<FormData>) => {
     console.error('Form validation errors:', errors);
     toast({
       title: "Validation Error",
@@ -248,8 +271,8 @@ const FranchiseForm = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8 px-4">
-      <div className='text-center' style={{display: "flex", justifyContent: "center", alignItems: "center"}}>
-        <img src="/early-jobs-logo.png" style={{height: "150px", width: "150px", marginLeft:"10px"}}/>
+      <div className="text-center" style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+        <img src="/early-jobs-logo.png" style={{ height: "150px", width: "150px", marginLeft: "10px" }} />
       </div>
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-8">
@@ -477,17 +500,16 @@ const FranchiseForm = () => {
                       <FormField
                         key={item.key}
                         control={form.control}
-                        // Explicitly type the name as keyof FormData['infrastructure']
                         name={
                           item.key === 'internet'
                             ? 'infrastructure.internet'
                             : item.key === 'electricity'
-                            ? 'infrastructure.electricity'
-                            : item.key === 'desks'
-                            ? 'infrastructure.desks'
-                            : item.key === 'cctv'
-                            ? 'infrastructure.cctv'
-                            : 'infrastructure.branding'
+                              ? 'infrastructure.electricity'
+                              : item.key === 'desks'
+                                ? 'infrastructure.desks'
+                                : item.key === 'cctv'
+                                  ? 'infrastructure.cctv'
+                                  : 'infrastructure.branding'
                         }
                         render={({ field }) => (
                           <FormItem className="flex flex-row items-start space-x-3 space-y-0">
