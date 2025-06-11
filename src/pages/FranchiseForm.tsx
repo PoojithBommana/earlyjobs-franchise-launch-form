@@ -26,6 +26,9 @@ type FileLink = { url: string; name: string };
 const DocumentsChecklist = ({ form }) => {
   const [fileLinks, setFileLinks] = useState<Record<string, FileLink>>({});
   const { toast } = useToast();
+  const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+  const uploadEndpoint = `${API_URL}/api/franchise/upload`;
 
   const handleUploadClick = (key: string) => {
     const input = document.createElement('input');
@@ -42,7 +45,7 @@ const DocumentsChecklist = ({ form }) => {
             formData.append('userId', form.getValues('franchiseeName') || 'franchiseeName');
             formData.append('key', key);
 
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/franchise/upload`, {
+            const response = await fetch(uploadEndpoint, {
               method: 'POST',
               body: formData,
             });
