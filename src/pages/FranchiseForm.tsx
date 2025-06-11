@@ -26,7 +26,7 @@ type FileLink = { url: string; name: string };
 const DocumentsChecklist = ({ form }) => {
   const [fileLinks, setFileLinks] = useState<Record<string, FileLink>>({});
   const { toast } = useToast();
-  const API_URL = process.env.NEXT_PUBLIC_API_URL;
+  const API_URL = import.meta.env.VITE_API_URL;
 
   const uploadEndpoint = `${API_URL}/api/franchise/upload`;
 
