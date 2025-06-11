@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FormField, FormItem, FormControl, FormMessage } from '@/components/ui/form';
@@ -18,6 +18,7 @@ interface DocumentsChecklistProps {
 
 const DocumentsChecklist: React.FC<DocumentsChecklistProps> = ({ form }) => {
   const { toast } = useToast();
+
 
   return (
     <Card>
@@ -174,7 +175,7 @@ const DocumentsChecklist: React.FC<DocumentsChecklistProps> = ({ form }) => {
                                   }}
                                   className="text-xs"
                                 >
-                                  Select from Drive
+                                  upload
                                 </Button>
                               </FormControl>
                               {field.value && (
@@ -198,7 +199,7 @@ const DocumentsChecklist: React.FC<DocumentsChecklistProps> = ({ form }) => {
         </div>
 
         <div className="mt-4 text-sm text-gray-500">
-          <p>* Click "Select from Drive" to choose a file from Google Drive. A shareable link will be added automatically.</p>
+          <p>* Click "upload" to choose a file from Google Drive. A shareable link will be added automatically.</p>
         </div>
       </CardContent>
     </Card>
