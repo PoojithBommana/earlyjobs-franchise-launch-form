@@ -51,7 +51,7 @@ const Index = () => {
               <p className="text-gray-600 mb-4">
                 Complete your franchise activation confirmation form to proceed with launch.
               </p>
-              <Link to="/earlyjobs/franchise-activation-form">
+              <Link to="/franchise-activation-form">
                 <Button className="w-full bg-orange-600 hover:bg-orange-700">
                   Start Activation Form
                 </Button>
@@ -70,7 +70,7 @@ const Index = () => {
               <p className="text-gray-600 mb-4">
                Complete your franchise activation confirmation form to proceed with launch.
               </p>
-              <Link to="/earlyjobs/branding-form">
+              <Link to="/branding-form">
                 <Button className="w-full bg-orange-600 hover:bg-orange-700">
                   Start Branding Form
                 </Button>

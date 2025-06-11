@@ -19,8 +19,8 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
-          <Route path="/earlyjobs/franchise-activation-form" element={<FranchiseForm />} />
-          <Route path="/earlyjobs/branding-form" element={<BrandingForm />} />
+          <Route path="/franchise-activation-form" element={<FranchiseForm />} />
+          <Route path="/branding-form" element={<BrandingForm />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
