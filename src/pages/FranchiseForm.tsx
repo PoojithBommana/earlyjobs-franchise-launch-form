@@ -28,7 +28,6 @@ const DocumentsChecklist = ({ form }) => {
   const [loading, setLoading] = useState<Record<string, boolean>>({}); // New loading state
   const { toast } = useToast();
   const API_URL = import.meta.env.VITE_API_URL;
-  console.log("API_URL:", API_URL);
 
   const uploadEndpoint = `${API_URL}/api/franchise/upload`;
 
