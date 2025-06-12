@@ -25,8 +25,10 @@ type FileLink = { url: string; name: string };
 
 const DocumentsChecklist = ({ form }) => {
   const [fileLinks, setFileLinks] = useState<Record<string, FileLink>>({});
+  const [loading, setLoading] = useState<Record<string, boolean>>({}); // New loading state
   const { toast } = useToast();
   const API_URL = import.meta.env.VITE_API_URL;
+  console.log("API_URL:", API_URL);
 
   const uploadEndpoint = `${API_URL}/api/franchise/upload`;
 
@@ -40,6 +42,7 @@ const DocumentsChecklist = ({ form }) => {
         const file = (event.target as HTMLInputElement).files?.[0];
         if (file) {
           try {
+            setLoading((prev) => ({ ...prev, [key]: true })); // Set loading true for the key
             const formData = new FormData();
             formData.append('file', file);
             formData.append('userId', form.getValues('franchiseeName') || 'franchiseeName');
@@ -67,19 +70,25 @@ const DocumentsChecklist = ({ form }) => {
           } catch (error) {
             console.error('File upload error:', error);
             form.setValue(`documents.${key}.status`, 'pending');
+            toast({
+              title: "Upload Failed",
+              description: "Failed to upload the file. Please try again.",
+              variant: "destructive",
+            });
+          } finally {
+            setLoading((prev) => ({ ...prev, [key]: false })); // Reset loading state
           }
         }
       };
-    }
-    else {
+      input.click();
+    } else {
       toast({
         title: "Your Full Name is Required",
-        description: "Please enter your  Full Name",
+        description: "Please enter your Full Name",
         variant: "destructive",
       });
       window.scrollTo(0, 0);
     }
-    input.click();
   };
 
   useEffect(() => {
@@ -112,7 +121,7 @@ const DocumentsChecklist = ({ form }) => {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Upload className="h-5 w-5 text-orange-600" />
+          <Upload className="h-5 w-5 text-blue-600" />
           Documents Checklist
         </CardTitle>
       </CardHeader>
@@ -123,11 +132,8 @@ const DocumentsChecklist = ({ form }) => {
             control={form.control}
             name={`documents.${key}.status`}
             render={({ field }) => (
-              <FormItem style={{
-                display: "flex",
-                flexDirection: "column"
-              }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <FormItem style={{ display: 'flex', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <FormLabel className="text-base font-medium">{label}</FormLabel>
                   <FormControl>
                     <div className="flex items-center gap-4">
@@ -157,11 +163,19 @@ const DocumentsChecklist = ({ form }) => {
                         variant="outline"
                         size="sm"
                         onClick={() => handleUploadClick(key)}
-                        disabled={field.value === 'uploaded'}
-                        className="flex items-center gap-2 border-orange-600 text-orange-600 hover:bg-orange-50"
+                        disabled={field.value === 'uploaded' || loading[key]} // Disable during upload
+                        className="flex items-center gap-2 border-orange-600 text-orange-600 hover:bg-orange-50 transition-colors"
                       >
-                        <Upload className="h-4 w-4" />
-                        Upload
+                        {loading[key] ? (
+                          <>
+                            <span className="animate-pulse">Uploading...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="h-4 w-4" />
+                            Upload
+                          </>
+                        )}
                       </Button>
                     </div>
                   </FormControl>
