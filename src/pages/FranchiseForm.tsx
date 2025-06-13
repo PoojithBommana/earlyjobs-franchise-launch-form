@@ -142,8 +142,7 @@ const DocumentsChecklist = ({ form }) => {
                           form.setValue(`documents.${key}.status`, value);
                         }}
                         value={field.value}
-                        className="flex items-center gap-4"
-                      >
+                        className="flex flex-col md:flex-row md:items-center md:gap-4 sm:mt-5 sm:mb-5">
                         <div className="flex items-center space-x-2">
                           <RadioGroupItem value="pending" id={`${key}-pending`} />
                           <Label htmlFor={`${key}-pending`} className="text-sm font-normal">
