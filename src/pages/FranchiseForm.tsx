@@ -25,7 +25,7 @@ type FileLink = { url: string; name: string };
 
 const DocumentsChecklist = ({ form }) => {
   const [fileLinks, setFileLinks] = useState<Record<string, FileLink>>({});
-  const [loading, setLoading] = useState<Record<string, boolean>>({}); // New loading state
+  const [loading, setLoading] = useState<Record<string, boolean>>({});
   const { toast } = useToast();
   const API_URL = import.meta.env.VITE_API_URL;
 
@@ -41,7 +41,7 @@ const DocumentsChecklist = ({ form }) => {
         const file = (event.target as HTMLInputElement).files?.[0];
         if (file) {
           try {
-            setLoading((prev) => ({ ...prev, [key]: true })); // Set loading true for the key
+            setLoading((prev) => ({ ...prev, [key]: true }));
             const formData = new FormData();
             formData.append('file', file);
             formData.append('userId', form.getValues('franchiseeName') || 'franchiseeName');
@@ -75,7 +75,7 @@ const DocumentsChecklist = ({ form }) => {
               variant: "destructive",
             });
           } finally {
-            setLoading((prev) => ({ ...prev, [key]: false })); // Reset loading state
+            setLoading((prev) => ({ ...prev, [key]: false }));
           }
         }
       };
@@ -108,7 +108,7 @@ const DocumentsChecklist = ({ form }) => {
     { key: 'businessReg', label: 'Business Registration' },
     { key: 'cheque', label: 'Cancelled Cheque' },
     { key: 'rental', label: 'Rental Agreement' },
-    { key: 'electricity', label: 'Electricity Bill' },
+    { key: 'electricity', label: 'Latest Electricity Bill' },
     { key: 'background', label: 'Background Verification' },
     { key: 'agreement', label: 'Franchise Agreement' },
     { key: 'fdd', label: 'FDD Document' },
@@ -162,7 +162,7 @@ const DocumentsChecklist = ({ form }) => {
                         variant="outline"
                         size="sm"
                         onClick={() => handleUploadClick(key)}
-                        disabled={field.value === 'uploaded' || loading[key]} // Disable during upload
+                        disabled={field.value === 'uploaded' || loading[key]}
                         className="flex items-center gap-2 border-orange-600 text-orange-600 hover:bg-orange-50 transition-colors"
                       >
                         {loading[key] ? (
