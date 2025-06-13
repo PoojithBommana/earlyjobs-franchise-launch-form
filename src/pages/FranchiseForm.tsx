@@ -6,12 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -68,7 +68,7 @@ const DocumentsChecklist = ({ form }) => {
             }));
           } catch (error) {
             console.error('File upload error:', error);
-            form.setValue(`documents.${key}.status`, 'pending');
+            form.setValue(`documents.${key}.status`, 'error');
             toast({
               title: "Upload Failed",
               description: "Failed to upload the file. Please try again.",
@@ -83,7 +83,7 @@ const DocumentsChecklist = ({ form }) => {
     } else {
       toast({
         title: "Your Full Name is Required",
-        description: "Please enter your Full Name",
+        description: "Please enter your Full Name before uploading documents.",
         variant: "destructive",
       });
       window.scrollTo(0, 0);
@@ -111,7 +111,6 @@ const DocumentsChecklist = ({ form }) => {
     { key: 'electricity', label: 'Latest Electricity Bill' },
     { key: 'background', label: 'Background Verification' },
     { key: 'agreement', label: 'Franchise Agreement' },
-    // { key: 'fdd', label: 'FDD Document' },
     { key: 'panCopy', label: 'PAN Copy' },
     { key: 'secondaryId', label: 'Secondary ID' },
   ];
@@ -129,41 +128,20 @@ const DocumentsChecklist = ({ form }) => {
           <FormField
             key={key}
             control={form.control}
-            name={`documents.${key}.status`}
+            name={`documents.${key}.driveLink`}
             render={({ field }) => (
               <FormItem style={{ display: 'flex', flexDirection: 'column' }}>
-               <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-                  <FormLabel className="text-base font-medium">{label}</FormLabel>
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+                  <FormLabel className="text-base font-medium">{label} *</FormLabel>
                   <FormControl>
-                   <div className="flex flex-col md:flex-row md:items-center md:gap-4 sm:mt-3">
-                      <RadioGroup
-                        onValueChange={(value) => {
-                          field.onChange(value);
-                          form.setValue(`documents.${key}.status`, value);
-                        }}
-                        value={field.value}
-                        className="flex flex-col md:flex-row md:items-center md:gap-4 sm:mt-5 sm:mb-5">
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="pending" id={`${key}-pending`} />
-                          <Label htmlFor={`${key}-pending`} className="text-sm font-normal">
-                            Pending
-                          </Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="submitted" id={`${key}-submitted`} />
-                          <Label htmlFor={`${key}-submitted`} className="text-sm font-normal">
-                            Submitted
-                          </Label>
-                        </div>
-                      </RadioGroup>
+                    <div className="flex flex-col md:flex-row md:items-center md:gap-4 sm:mt-3">
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
                         onClick={() => handleUploadClick(key)}
-                        disabled={field.value === 'uploaded' || loading[key]}
-                        className="flex items-center gap-2 border-orange-600 text-orange-600 hover:bg-orange-50 transition-colors  mt-0 sm:mt-5"
-                        
+                        disabled={loading[key]}
+                        className="flex items-center gap-2 border-orange-600 text-orange-600 hover:bg-orange-50 transition-colors mt-0 sm:mt-5"
                       >
                         {loading[key] ? (
                           <>
@@ -236,6 +214,34 @@ const FranchiseForm = () => {
     setIsSubmitting(true);
     setError(null);
 
+    // Check if all documents have a valid driveLink
+    const documentKeys = [
+      'aadhaarPan',
+      'photograph',
+      'businessReg',
+      'cheque',
+      'rental',
+      'electricity',
+      'background',
+      'agreement',
+      'panCopy',
+      'secondaryId',
+    ];
+
+    const missingDocuments = documentKeys.filter(
+      (key) => !data.documents[key].driveLink || data.documents[key].driveLink.trim() === ''
+    );
+
+    if (missingDocuments.length > 0) {
+      setIsSubmitting(false);
+      toast({
+        title: "Missing Documents",
+        description: "Please upload all the documents before submitting the form.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const result = await submitToGoogleSheets(data);
       if (!result.success) {
@@ -266,7 +272,7 @@ const FranchiseForm = () => {
     console.error('Form validation errors:', errors);
     toast({
       title: "Validation Error",
-      description: "Please check the form for errors and fill all required fields.",
+      description: "Please check the form for errors and upload all required documents.",
       variant: "destructive",
     });
   }, [toast]);
