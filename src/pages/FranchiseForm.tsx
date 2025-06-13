@@ -111,7 +111,7 @@ const DocumentsChecklist = ({ form }) => {
     { key: 'electricity', label: 'Latest Electricity Bill' },
     { key: 'background', label: 'Background Verification' },
     { key: 'agreement', label: 'Franchise Agreement' },
-    { key: 'fdd', label: 'FDD Document' },
+    // { key: 'fdd', label: 'FDD Document' },
     { key: 'panCopy', label: 'PAN Copy' },
     { key: 'secondaryId', label: 'Secondary ID' },
   ];
@@ -132,10 +132,10 @@ const DocumentsChecklist = ({ form }) => {
             name={`documents.${key}.status`}
             render={({ field }) => (
               <FormItem style={{ display: 'flex', flexDirection: 'column' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+               <div className="flex flex-col md:flex-row md:items-center md:justify-between">
                   <FormLabel className="text-base font-medium">{label}</FormLabel>
                   <FormControl>
-                    <div className="flex items-center gap-4">
+                   <div className="flex flex-col md:flex-row md:items-center md:gap-4 sm:mt-3">
                       <RadioGroup
                         onValueChange={(value) => {
                           field.onChange(value);
@@ -163,7 +163,8 @@ const DocumentsChecklist = ({ form }) => {
                         size="sm"
                         onClick={() => handleUploadClick(key)}
                         disabled={field.value === 'uploaded' || loading[key]}
-                        className="flex items-center gap-2 border-orange-600 text-orange-600 hover:bg-orange-50 transition-colors"
+                        className="flex items-center gap-2 border-orange-600 text-orange-600 hover:bg-orange-50 transition-colors  mt-0 sm:mt-5"
+                        
                       >
                         {loading[key] ? (
                           <>
