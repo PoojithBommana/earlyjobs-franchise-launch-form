@@ -590,7 +590,7 @@ const FranchiseForm = () => {
                     name="streetAddress"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Street Address*</FormLabel>
+                        <FormLabel>House / Building / Apartment / Mall / Business Center</FormLabel>
                         <FormControl>
                           <Input placeholder="Building name, street name, and number" {...field} />
                         </FormControl>
@@ -603,7 +603,7 @@ const FranchiseForm = () => {
                     name="townLocality"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Town/Locality*</FormLabel>
+                        <FormLabel>Town/area*</FormLabel>
                         <FormControl>
                           <Input placeholder="Neighborhood or local area name" {...field} />
                         </FormControl>
@@ -618,7 +618,7 @@ const FranchiseForm = () => {
                     name="city"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>City*</FormLabel>
+                        <FormLabel>City/town*</FormLabel>
                         <FormControl>
                           <Input placeholder="City or municipality name" {...field} />
                         </FormControl>
@@ -649,19 +649,6 @@ const FranchiseForm = () => {
                         <FormLabel>Postal Code/ZIP Code*</FormLabel>
                         <FormControl>
                           <Input placeholder="Postal code or ZIP code" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="country"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Country*</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Country name" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
