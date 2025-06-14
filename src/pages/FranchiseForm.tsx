@@ -326,12 +326,12 @@ const FranchiseForm = () => {
         cheque: { status: 'pending', driveLink: '' },
         rental: { status: 'pending', driveLink: '' },
         electricity: { status: 'pending', driveLink: '' },
-        background: { status: 'pending', driveLink: '' },
+        // background: { status: 'pending', driveLink: '' },
         agreement: { status: 'pending', driveLink: '' },
         panCopy: { status: 'pending', driveLink: '' },
         secondaryId: { status: 'pending', driveLink: '' },
       },
-      declaration: false,
+      // declaration: false,
       ownerFirstName: '',
       ownerLastName: '',
       ownerPhone: '',
@@ -375,19 +375,32 @@ const FranchiseForm = () => {
       'secondaryId',
     ];
 
-    const missingDocuments = documentKeys.filter(
-      (key) => {
-        if (key === 'aadhaar') {
-          return !data.documents[key].front || !data.documents[key].back;
-        }
-        return !data.documents[key].driveLink || data.documents[key].driveLink.trim() === '';
+    const missingDocuments = documentKeys.filter((key) => {
+      // Safely check if the document exists first
+      const doc = data.documents[key as keyof typeof data.documents];
+      if (!doc) return true;
+
+      // Special case for aadhaar which has front and back
+      if (key === 'aadhaar') {
+        return !('front' in doc && 'back' in doc && doc.front && doc.back);
       }
+
+      // For all other documents, check driveLink
+      return !doc.driveLink || doc.driveLink.trim() === '';
+    }).filter(key => 
+      // Filter out 'background' as it's commented out in your form
+      key !== 'background' && 
+      // Filter out optional documents (panCopy is optional)
+      key !== 'panCopy'
     );
+
     console.log('Missing Documents:', missingDocuments);
-    if (missingDocuments.length > 2) {
+
+    // Adjust the validation to exclude optional documents
+    if (missingDocuments.length > 0) {
       setIsSubmitting(false);
       toast({
-        title: "Missing Documents Application",
+        title: "Missing Required Documents",
         description: "Please upload all required documents before submitting the form.",
         variant: "destructive",
       });
