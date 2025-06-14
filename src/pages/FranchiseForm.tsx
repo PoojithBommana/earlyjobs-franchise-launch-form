@@ -1,9 +1,10 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Calendar, MapPin, Building, Users, CheckCircle, Loader2, Upload } from 'lucide-react';
+import { Calendar, MapPin, Building, Users, CheckCircle, Loader2, Upload, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useFormContext } from 'react-hook-form';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -20,100 +21,132 @@ import { formSchema } from '@/types/franchise-form';
 import { submitToGoogleSheets } from '@/utils/form-submission';
 import SuccessMessage from '@/components/SuccessMessage';
 import type { FieldErrors } from 'react-hook-form';
+import { documentKeyMap } from '@/constants/franchise-form';
 
 type FileLink = { url: string; name: string };
 
-const DocumentsChecklist = ({ form }) => {
-  const [fileLinks, setFileLinks] = useState<Record<string, FileLink>>({});
-  const [loading, setLoading] = useState<Record<string, boolean>>({});
-  const { toast } = useToast();
-  const API_URL = import.meta.env.VITE_API_URL;
+const documentsList = [
+  { key: 'aadhaar', label: 'Aadhaar Card (Front & Back)', dualUpload: true },
+  { key: 'pan', label: 'PAN Card', dualUpload: false },
+  { key: 'photograph', label: 'Passport Size Photograph', dualUpload: false },
+  { key: 'businessReg', label: 'Business Registration Certificate', dualUpload: false },
+  { key: 'cheque', label: 'Cancelled Cheque', dualUpload: false },
+  { key: 'rental', label: 'Rental Agreement', dualUpload: false },
+  { key: 'electricity', label: 'Latest Electricity Bill', dualUpload: false },
+  { key: 'background', label: 'Background Verification Report', dualUpload: false },
+  { key: 'agreement', label: 'Signed Franchise Agreement', dualUpload: false },
+  { key: 'panCopy', label: 'PAN Card Copy', dualUpload: false },
+  { key: 'secondaryId', label: 'Secondary ID Proof', dualUpload: false },
+];
 
+const DocumentsChecklist = () => {
+  const { toast } = useToast();
+  const form = useFormContext<FormData>();
+  const [fileLinks, setFileLinks] = useState<Record<string, { front?: FileLink; back?: FileLink }>>({});
+  const [loading, setLoading] = useState<Record<string, { front?: boolean; back?: boolean }>>({});
+  const API_URL = import.meta.env.VITE_API_URL;
   const uploadEndpoint = `${API_URL}/api/franchise/upload`;
 
-  const handleUploadClick = (key: string) => {
-    const input = document.createElement('input');
-    if (form.getValues('franchiseeName')) {
-      input.type = 'file';
-      input.accept = '.pdf,.jpg,.jpeg,.png';
-      console.log("form.getValues('franchiseeName'):", form.getValues('franchiseeName'));
-      input.onchange = async (event: Event) => {
-        const file = (event.target as HTMLInputElement).files?.[0];
-        if (file) {
-          try {
-            setLoading((prev) => ({ ...prev, [key]: true }));
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('userId', form.getValues('franchiseeName') || 'franchiseeName');
-            formData.append('key', key);
+  const handleUploadClick = useCallback(
+    (key: string, side?: 'front' | 'back') => {
+      const input = document.createElement('input');
+      if (form.getValues('franchiseeName')) {
+        input.type = 'file';
+        input.accept = '.pdf,.jpg,.jpeg,.png';
+        input.onchange = async (event: Event) => {
+          const file = (event.target as HTMLInputElement).files?.[0];
+          if (file) {
+            try {
+              setLoading((prev) => ({
+                ...prev,
+                [key]: { ...prev[key], [side ?? 'front']: true },
+              }));
+              const formData = new FormData();
+              formData.append('file', file);
+              formData.append('userId', form.getValues('franchiseeName') || 'franchiseeName');
+              formData.append('key', `${key}${side ? `_${side}` : ''}`);
 
-            const response = await fetch(uploadEndpoint, {
-              method: 'POST',
-              body: formData,
-            });
+              const response = await fetch(uploadEndpoint, {
+                method: 'POST',
+                body: formData,
+              });
 
-            if (!response.ok) {
-              throw new Error(`Upload failed: ${response.statusText}`);
+              if (!response.ok) {
+                throw new Error(`Upload failed: ${response.statusText}`);
+              }
+
+              const result = await response.json();
+              console.log('File upload result:', key, side);
+
+              const mappedKey = documentKeyMap[key as keyof typeof documentKeyMap];
+              console.log('mappedKey:', mappedKey);
+              const fieldKey = side ? `documents.${mappedKey}.${side}` : `documents.${mappedKey}.driveLink`;
+              form.setValue(fieldKey as any, result.webViewLink);
+              form.setValue(`documents.${mappedKey}.status` as any, 'submitted');
+
+              setFileLinks((prev) => ({
+                ...prev,
+                [key]: {
+                  ...prev[key],
+                  [side ?? 'front']: { url: result.webViewLink, name: file.name },
+                },
+              }));
+            } catch (error) {
+              console.error('File upload error:', error);
+              form.setValue(`documents.${documentKeyMap[key as keyof typeof documentKeyMap]}.status` as any, 'error');
+              toast({
+                title: 'Upload Failed',
+                description: 'Failed to upload the file. Please try again.',
+                variant: 'destructive',
+              });
+            } finally {
+              setLoading((prev) => ({
+                ...prev,
+                [key]: { ...prev[key], [side ?? 'front']: false },
+              }));
             }
-
-            const result = await response.json();
-            console.log(`File uploaded for ${key}:`, result.webViewLink);
-
-            form.setValue(`documents.${key}.driveLink`, result.webViewLink);
-            form.setValue(`documents.${key}.status`, 'submitted');
-
-            setFileLinks((prev) => ({
-              ...prev,
-              [key]: { url: result.webViewLink, name: file.name },
-            }));
-          } catch (error) {
-            console.error('File upload error:', error);
-            form.setValue(`documents.${key}.status`, 'error');
-            toast({
-              title: "Upload Failed",
-              description: "Failed to upload the file. Please try again.",
-              variant: "destructive",
-            });
-          } finally {
-            setLoading((prev) => ({ ...prev, [key]: false }));
           }
+        };
+        input.click();
+      } else {
+        toast({
+          title: 'Your Full Name is Required',
+          description: 'Please enter your Full Name before uploading documents.',
+          variant: 'destructive',
+        });
+        window.scrollTo(0, 0);
+      }
+    },
+    [form, toast]
+  );
+
+  const handleCancelUpload = useCallback(
+    (key: string, side?: 'front' | 'back') => {
+      const mappedKey = documentKeyMap[key as keyof typeof documentKeyMap];
+      const fieldKey = side ? `documents.${mappedKey}.${side}` : `documents.${mappedKey}.driveLink`;
+      form.setValue(fieldKey as any, '');
+      form.setValue(`documents.${mappedKey}.status` as any, 'pending');
+      setFileLinks((prev) => {
+        const newLinks = { ...prev };
+        if (side) {
+          newLinks[key] = { ...newLinks[key], [side]: undefined };
+        } else {
+          newLinks[key] = {};
         }
-      };
-      input.click();
-    } else {
-      toast({
-        title: "Your Full Name is Required",
-        description: "Please enter your Full Name before uploading documents.",
-        variant: "destructive",
+        return newLinks;
       });
-      window.scrollTo(0, 0);
-    }
-  };
+    },
+    [form]
+  );
 
   useEffect(() => {
     return () => {
-      Object.values(fileLinks).forEach(({ url }) => {
-        if (url) URL.revokeObjectURL(url);
+      Object.values(fileLinks).forEach(({ front, back }) => {
+        if (front?.url) URL.revokeObjectURL(front.url);
+        if (back?.url) URL.revokeObjectURL(back.url);
       });
     };
   }, [fileLinks]);
-
-  useEffect(() => {
-    console.log("DocumentsChecklist mounted with:", form.getValues());
-  }, [form]);
-
-  const documentFields = [
-    { key: 'aadhaarPan', label: 'Aadhaar & PAN Card' },
-    { key: 'photograph', label: 'Passport-size Photograph' },
-    { key: 'businessReg', label: 'Business Registration' },
-    { key: 'cheque', label: 'Cancelled Cheque' },
-    { key: 'rental', label: 'Rental Agreement' },
-    { key: 'electricity', label: 'Latest Electricity Bill' },
-    { key: 'background', label: 'Background Verification' },
-    { key: 'agreement', label: 'Franchise Agreement' },
-    { key: 'panCopy', label: 'PAN Copy' },
-    { key: 'secondaryId', label: 'Secondary ID' },
-  ];
 
   return (
     <Card>
@@ -124,47 +157,128 @@ const DocumentsChecklist = ({ form }) => {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {documentFields.map(({ key, label }) => (
+        {documentsList.map(({ key, label, dualUpload }) => (
           <FormField
             key={key}
             control={form.control}
-            name={`documents.${key}.driveLink`}
+            name={dualUpload ? `documents.${documentKeyMap[key]}.front` : `documents.${documentKeyMap[key]}.driveLink`}
             render={({ field }) => (
               <FormItem style={{ display: 'flex', flexDirection: 'column' }}>
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-                  <FormLabel className="text-base font-medium">{label} *</FormLabel>
+                  <FormLabel className="text-base font-medium">
+                    {label} {dualUpload || (key !== 'panCopy' && key !== 'secondaryId') ? '*' : '(Optional)'}
+                  </FormLabel>
                   <FormControl>
                     <div className="flex flex-col md:flex-row md:items-center md:gap-4 sm:mt-3">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleUploadClick(key)}
-                        disabled={loading[key]}
-                        className="flex items-center gap-2 border-orange-600 text-orange-600 hover:bg-orange-50 transition-colors mt-0 sm:mt-5"
-                      >
-                        {loading[key] ? (
-                          <>
+                      {dualUpload ? (
+                        <>
+                          <div className="flex flex-col gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleUploadClick(key, 'front')}
+                              disabled={loading[key]?.front}
+                              className="flex items-center gap-2 border-orange-600 text-orange-600 hover:bg-orange-50 transition-colors"
+                            >
+                              {loading[key]?.front ? (
+                                <span className="animate-pulse">Uploading Front...</span>
+                              ) : (
+                                <>
+                                  <Upload className="h-4 w-4" />
+                                  Upload Front
+                                </>
+                              )}
+                            </Button>
+                            {fileLinks[key]?.front && (
+                              <div className="flex items-center gap-2 text-sm text-blue-600">
+                                <a href={fileLinks[key].front?.url} target="_blank" rel="noopener noreferrer">
+                                  {fileLinks[key].front?.name}
+                                </a>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleCancelUpload(key, 'front')}
+                                  className="text-red-600 hover:text-red-800"
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex flex-col gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleUploadClick(key, 'back')}
+                              disabled={loading[key]?.back}
+                              className="flex items-center gap-2 border-orange-600 text-orange-600 hover:bg-orange-50 transition-colors"
+                            >
+                              {loading[key]?.back ? (
+                                <span className="animate-pulse">Uploading Back...</span>
+                              ) : (
+                                <>
+                                  <Upload className="h-4 w-4" />
+                                  Upload Back
+                                </>
+                              )}
+                            </Button>
+                            {fileLinks[key]?.back && (
+                              <div className="flex items-center gap-2 text-sm text-blue-600">
+                                <a href={fileLinks[key].back?.url} target="_blank" rel="noopener noreferrer">
+                                  {fileLinks[key].back?.name}
+                                </a>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleCancelUpload(key, 'back')}
+                                  className="text-red-600 hover:text-red-800"
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        </>
+                      ) : (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleUploadClick(key)}
+                          disabled={loading[key]?.front}
+                          className="flex items-center gap-2 border-orange-600 text-orange-600 hover:bg-orange-50 transition-colors mt-0 sm:mt-5"
+                        >
+                          {loading[key]?.front ? (
                             <span className="animate-pulse">Uploading...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Upload className="h-4 w-4" />
-                            Upload
-                          </>
-                        )}
-                      </Button>
+                          ) : (
+                            <>
+                              <Upload className="h-4 w-4" />
+                              Upload
+                            </>
+                          )}
+                        </Button>
+                      )}
                     </div>
                   </FormControl>
                 </div>
-                {fileLinks[key] && (
-                  <div className="text-sm text-blue-600 mt-2">
-                    <a href={fileLinks[key].url} target="_blank" rel="noopener noreferrer">
-                      View uploaded file: {fileLinks[key].name}
+                {!dualUpload && fileLinks[key]?.front && (
+                  <div className="flex items-center gap-2 text-sm text-blue-600 mt-2">
+                    <a href={fileLinks[key].front?.url} target="_blank" rel="noopener noreferrer">
+                      View uploaded file: {fileLinks[key].front?.name}
                     </a>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleCancelUpload(key)}
+                      className="text-red-600 hover:text-red-800"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
                   </div>
                 )}
-                {form.getValues(`documents.${key}.status`) === 'error' && (
+                {form.getValues(`documents.${documentKeyMap[key]}.status` as any) === 'error' && (
                   <div className="text-sm text-red-500 mt-2">Failed to process file</div>
                 )}
                 <FormMessage />
@@ -177,6 +291,8 @@ const DocumentsChecklist = ({ form }) => {
   );
 };
 
+
+
 const FranchiseForm = () => {
   const { toast } = useToast();
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
@@ -187,14 +303,24 @@ const FranchiseForm = () => {
     resolver: zodResolver(formSchema),
     defaultValues: {
       infrastructure: {
-        internet: false,
-        electricity: false,
+        electricity: true,
         desks: false,
-        cctv: false,
-        branding: false,
+        reception: false,
+        interviewDesks: false,
+        brandingSpace: false,
+        broadband: false,
+        laptops: false,
+        printer: false,
+        whiteboard: false,
+        ups: false,
+        washroom: false,
+        drinkingWater: false,
+        cctvCoverage: false,
+        smartPhone: false,
       },
       documents: {
-        aadhaarPan: { status: 'pending', driveLink: '' },
+        aadhaar: { status: 'pending', front: '', back: '' },
+        pan: { status: 'pending', driveLink: '' },
         photograph: { status: 'pending', driveLink: '' },
         businessReg: { status: 'pending', driveLink: '' },
         cheque: { status: 'pending', driveLink: '' },
@@ -202,21 +328,20 @@ const FranchiseForm = () => {
         electricity: { status: 'pending', driveLink: '' },
         background: { status: 'pending', driveLink: '' },
         agreement: { status: 'pending', driveLink: '' },
-        fdd: { status: 'pending', driveLink: '' },
         panCopy: { status: 'pending', driveLink: '' },
         secondaryId: { status: 'pending', driveLink: '' },
       },
-      declaration: false,
     },
   });
 
   const onSubmit = useCallback(async (data: FormData) => {
+    console.log(data);
     setIsSubmitting(true);
     setError(null);
 
-    // Check if all documents have a valid driveLink
     const documentKeys = [
-      'aadhaarPan',
+      'aadhaar',
+      'pan',
       'photograph',
       'businessReg',
       'cheque',
@@ -229,14 +354,19 @@ const FranchiseForm = () => {
     ];
 
     const missingDocuments = documentKeys.filter(
-      (key) => !data.documents[key].driveLink || data.documents[key].driveLink.trim() === ''
+      (key) => {
+        if (key === 'aadhaar') {
+          return !data.documents[key].front || !data.documents[key].back;
+        }
+        return !data.documents[key].driveLink || data.documents[key].driveLink.trim() === '';
+      }
     );
-
-    if (missingDocuments.length > 0) {
+    console.log('Missing Documents:', missingDocuments);
+    if (missingDocuments.length > 2) {
       setIsSubmitting(false);
       toast({
-        title: "Missing Documents",
-        description: "Please upload all the documents before submitting the form.",
+        title: "Missing Documents Application",
+        description: "Please upload all required documents before submitting the form.",
         variant: "destructive",
       });
       return;
@@ -244,19 +374,17 @@ const FranchiseForm = () => {
 
     try {
       const result = await submitToGoogleSheets(data);
-      if (!result.success) {
-        throw new Error('Submission failed');
+      if (result.success) {
+        setShowSuccessMessage(true);
+        form.reset();
+        toast({
+          title: "Form Submission Successfully",
+          description: "Your franchise application form has been submitted.",
+        });
       }
-
-      setShowSuccessMessage(true);
-      form.reset();
-      toast({
-        title: "Form Submitted Successfully!",
-        description: "Your franchise activation form has been submitted.",
-      });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
-      console.log('Submission error:', errorMessage);
+      console.error('Submission error:', errorMessage);
       setError(errorMessage);
       toast({
         title: "Submission Failed",
@@ -268,8 +396,8 @@ const FranchiseForm = () => {
     }
   }, [form, toast]);
 
-  const onError = useCallback((errors: FieldErrors<FormData>) => {
-    console.error('Form validation errors:', errors);
+  const onError = useCallback((errors: any) => {
+    console.error('Form validation error:', errors);
     toast({
       title: "Validation Error",
       description: "Please check the form for errors and upload all required documents.",
@@ -292,11 +420,11 @@ const FranchiseForm = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8 px-4">
+    <div className="min-h-screen bg-gray-100 py-8 px-4">
       <div className="text-center" style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
         <img src="/early-jobs-logo.png" style={{ height: "150px", width: "150px", marginLeft: "10px" }} />
       </div>
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-4xl mx-auto w-full">
         <div className="text-center mb-8">
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
             Earlyjobs Franchise Activation
@@ -326,7 +454,7 @@ const FranchiseForm = () => {
                     name="franchiseeName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Franchisee Full Name *</FormLabel>
+                        <FormLabel>Franchisee Owner Full Name</FormLabel>
                         <FormControl>
                           <Input placeholder="Enter your full name" {...field} />
                         </FormControl>
@@ -339,7 +467,7 @@ const FranchiseForm = () => {
                     name="businessName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Registered Business Name (Optional)</FormLabel>
+                        <FormLabel>Registered Business Name</FormLabel>
                         <FormControl>
                           <Input placeholder="Enter business name" {...field} />
                         </FormControl>
@@ -354,7 +482,7 @@ const FranchiseForm = () => {
                     name="franchiseLocation"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Franchise Location (District/City) *</FormLabel>
+                        <FormLabel>Franchise Location (District/City)</FormLabel>
                         <FormControl>
                           <Input placeholder="Enter location" {...field} />
                         </FormControl>
@@ -367,14 +495,14 @@ const FranchiseForm = () => {
                     name="openingDate"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Proposed Opening Date *</FormLabel>
+                        <FormLabel>Proposed Opening Date</FormLabel>
                         <Popover>
                           <PopoverTrigger asChild>
                             <FormControl>
                               <Button
                                 variant="outline"
                                 className={cn(
-                                  "w-full pl-3 text-left font-normal",
+                                  "w-full text-left pl-3 font-normal",
                                   !field.value && "text-muted-foreground"
                                 )}
                               >
@@ -415,30 +543,97 @@ const FranchiseForm = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                <FormField
-                  control={form.control}
-                  name="officeAddress"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Office Address *</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Enter complete office address with pincode"
-                          className="min-h-[80px]"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="streetAddress"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Street Address*</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Building name, street name, and number" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="townLocality"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Town/Locality*</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Neighborhood or local area name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="city"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>City*</FormLabel>
+                        <FormControl>
+                          <Input placeholder="City or municipality name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="stateProvince"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>State/Province*</FormLabel>
+                        <FormControl>
+                          <Input placeholder="State or province name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="postalCode"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Postal Code/ZIP Code*</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Postal code or ZIP code" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="country"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Country*</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Country name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <FormField
                     control={form.control}
                     name="officeArea"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Office Area *</FormLabel>
+                        <FormLabel>Office Area*</FormLabel>
                         <FormControl>
                           <RadioGroup
                             onValueChange={field.onChange}
@@ -469,7 +664,7 @@ const FranchiseForm = () => {
                       name="customArea"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Specify Area</FormLabel>
+                          <FormLabel>Specify Area*</FormLabel>
                           <FormControl>
                             <Input placeholder="Enter area in sq ft" {...field} />
                           </FormControl>
@@ -483,7 +678,7 @@ const FranchiseForm = () => {
                     name="setupType"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Office Setup Type *</FormLabel>
+                        <FormLabel>Office Setup Type*</FormLabel>
                         <FormControl>
                           <RadioGroup
                             onValueChange={field.onChange}
@@ -510,40 +705,49 @@ const FranchiseForm = () => {
                   />
                 </div>
                 <div>
-                  <Label className="text-base font-semibold mb-4 block">Office Infrastructure</Label>
+                  <Label className="text-base font-semibold mb-4 block">Office Infrastructure*</Label>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {[
-                      { key: 'internet', label: 'Internet active' },
+                    {([
                       { key: 'electricity', label: 'Electricity connection active' },
                       { key: 'desks', label: '2–3 Desks' },
-                      { key: 'cctv', label: 'CCTV installed (optional)' },
-                      { key: 'branding', label: 'Branding displayed (poster/flex)' },
-                    ].map((item) => (
+                      { key: 'reception', label: 'Reception (for walk-ins)' },
+                      { key: 'interviewDesks', label: 'Interview desk x 2' },
+                      { key: 'brandingSpace', label: 'Branding space for EarlyJobs wall' },
+                      { key: 'broadband', label: 'Broadband, WiFi router' },
+                      { key: 'laptops', label: 'Laptops x 2 for staff and 1 for assessments' },
+                      { key: 'printer', label: 'Printer (Basic)' },
+                      { key: 'whiteboard', label: 'Whiteboard for pipeline management / Notice Board' },
+                      { key: 'ups', label: 'UPS or Power Backup' },
+                      { key: 'washroom', label: 'Washroom within 500 M Radius' },
+                      { key: 'drinkingWater', label: 'Drinking Water Facility' },
+                      { key: 'cctvCoverage', label: '1 CCTV capturing the complete office and 1 outside' },
+                      { key: 'smartPhone', label: 'Business Sim with WhatsApp' },
+                    ] as const).map((item) => (
                       <FormField
                         key={item.key}
                         control={form.control}
-                        name={
-                          item.key === 'internet'
-                            ? 'infrastructure.internet'
-                            : item.key === 'electricity'
-                              ? 'infrastructure.electricity'
-                              : item.key === 'desks'
-                                ? 'infrastructure.desks'
-                                : item.key === 'cctv'
-                                  ? 'infrastructure.cctv'
-                                  : 'infrastructure.branding'
+                        name={`infrastructure.${item.key}` as
+                          | "infrastructure.electricity"
+                          | "infrastructure.desks"
+                          | "infrastructure.reception"
+                          | "infrastructure.interviewDesks"
+                          | "infrastructure.brandingSpace"
+                          | "infrastructure.broadband"
+                          | "infrastructure.laptops"
+                          | "infrastructure.printer"
+                          | "infrastructure.whiteboard"
+                          | "infrastructure.ups"
+                          | "infrastructure.washroom"
+                          | "infrastructure.drinkingWater"
+                          | "infrastructure.cctvCoverage"
+                          | "infrastructure.smartPhone"
                         }
                         render={({ field }) => (
                           <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                             <FormControl>
-                              <Checkbox
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
+                              <Checkbox checked={field.value} onCheckedChange={field.onChange} />
                             </FormControl>
-                            <FormLabel className="text-sm font-normal">
-                              {item.label}
-                            </FormLabel>
+                            <FormLabel className="text-sm font-normal">{item.label}</FormLabel>
                           </FormItem>
                         )}
                       />
@@ -568,7 +772,7 @@ const FranchiseForm = () => {
                     name="spocName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>SPOC Full Name *</FormLabel>
+                        <FormLabel>SPOC Full Name</FormLabel>
                         <FormControl>
                           <Input placeholder="Enter SPOC name" {...field} />
                         </FormControl>
@@ -581,7 +785,7 @@ const FranchiseForm = () => {
                     name="spocMobile"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>SPOC Mobile *</FormLabel>
+                        <FormLabel>SPOC Mobile</FormLabel>
                         <FormControl>
                           <Input placeholder="Enter 10-digit mobile" {...field} />
                         </FormControl>
@@ -594,7 +798,7 @@ const FranchiseForm = () => {
                     name="spocEmail"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>SPOC Email *</FormLabel>
+                        <FormLabel>SPOC Email</FormLabel>
                         <FormControl>
                           <Input placeholder="Enter email address" {...field} />
                         </FormControl>
@@ -620,7 +824,7 @@ const FranchiseForm = () => {
             </Card>
 
             {/* Section D: Documents Checklist */}
-            <DocumentsChecklist form={form} />
+            <DocumentsChecklist />
 
             {/* Section E: Final Declarations */}
             <Card>
@@ -675,6 +879,7 @@ const FranchiseForm = () => {
                     )}
                   />
                 )}
+
                 <FormField
                   control={form.control}
                   name="declaration"

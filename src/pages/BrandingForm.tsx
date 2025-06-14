@@ -76,8 +76,8 @@ const BrandingForm = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-       <div className='text-center' style={{display: "flex", justifyContent: "center", alignItems: "center"}}>
-      <img src ="/early-jobs-logo.png" style={{height: "150px", width: "150px" , marginLeft:"10px"}}/>
+      <div className='text-center' style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+        <img src="/early-jobs-logo.png" style={{ height: "150px", width: "150px", marginLeft: "10px" }} />
       </div>
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
@@ -174,7 +174,7 @@ const BrandingForm = () => {
                       name="alternateMobile"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Alternate Mobile Number (Optional)</FormLabel>
+                          <FormLabel>Alternate Mobile Number </FormLabel>
                           <FormControl>
                             <Input {...field} />
                           </FormControl>
@@ -773,7 +773,7 @@ const BrandingForm = () => {
                 <Button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full md:w-auto px-8 py-3 text-lg" style={{backgroundColor:"orange"}}
+                  className="w-full md:w-auto px-8 py-3 text-lg" style={{ backgroundColor: "orange" }}
                 >
                   {isSubmitting ? (
                     <>
