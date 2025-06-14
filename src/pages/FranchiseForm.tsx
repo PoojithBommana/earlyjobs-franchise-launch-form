@@ -36,7 +36,7 @@ const documentsList = [
   // { key: 'background', label: 'Background Verification Report', dualUpload: false },
   { key: 'agreement', label: 'Signed Franchise Agreement', dualUpload: false },
   { key: 'panCopy', label: 'Business PAN ( If sole proprietor)', dualUpload: false },
-  { key: 'secondaryId', label: 'GST Certificate', dualUpload: false },
+  { key: 'secondaryId', label: 'GST Certificate (Mandatory)', dualUpload: false },
 ];
 
 const DocumentsChecklist = () => {
