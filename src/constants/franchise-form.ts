@@ -1,30 +1,46 @@
 
-import { DocumentKey, FormData } from '@/types/franchise-form';
+import { FormData } from '@/types/franchise-form';
 
-export const documentsList: { key: DocumentKey; label: string }[] = [
-  { key: 'Aadhaar/PAN of Owner', label: 'Aadhaar/PAN of Owner' },
-  { key: 'Passport-size Photograph', label: 'Passport-size Photograph' },
-  { key: 'Business Registration (GST/Udyam)', label: 'Business Registration (GST/Udyam)' },
-  { key: 'Cancelled Cheque/Passbook Copy', label: 'Cancelled Cheque/Passbook Copy' },
-  { key: 'Rental Agreement or Property Proof', label: 'Rental Agreement or Property Proof' },
-  { key: 'Latest Electricity Bill', label: 'Latest Electricity Bill' },
-  { key: 'Background Clearance Declaration', label: 'Background Clearance Declaration' },
-  { key: 'Signed Franchise Agreement', label: 'Signed Franchise Agreement' },
-  { key: 'Signed FDD Acknowledgement', label: 'Signed FDD Acknowledgement' },
-  { key: 'PAN Card Copy', label: 'PAN Card Copy' },
-  { key: 'Secondary ID (DL/Passport/Voter ID)', label: 'Secondary ID (DL/Passport/Voter ID)' },
+// Define DocumentKey as a union of the exact string literals used as keys
+export type DocumentKey =
+  | 'aadhaar'
+  | 'pan'
+  | 'photograph'
+  | 'businessReg'
+  | 'cheque'
+  | 'rental'
+  | 'electricity'
+  | 'background'
+  | 'agreement'
+  | 'panCopy'
+  | 'secondaryId';
+
+// Define documentsList to match component
+export const documentsList: { key: DocumentKey; label: string; dualUpload?: boolean }[] = [
+  { key: 'aadhaar', label: "Franchisee Owner's Aadhaar", dualUpload: true },
+  { key: 'pan', label: "Franchisee Owner's PAN" },
+  { key: 'photograph', label: 'Passport-size Photograph' },
+  { key: 'businessReg', label: 'Business Registration' },
+  { key: 'cheque', label: 'Cancelled Cheque' },
+  { key: 'rental', label: 'Rental Agreement' },
+  { key: 'electricity', label: 'Latest Electricity Bill' },
+  { key: 'background', label: 'Background Verification' },
+  { key: 'agreement', label: 'Franchise Agreement' },
+  { key: 'panCopy', label: 'PAN Copy' },
+  { key: 'secondaryId', label: 'Secondary ID' },
 ];
 
+// Map DocumentKey to FormData document keys
 export const documentKeyMap: Record<DocumentKey, keyof FormData['documents']> = {
-  'Aadhaar/PAN of Owner': 'aadhaarPan',
-  'Passport-size Photograph': 'photograph',
-  'Business Registration (GST/Udyam)': 'businessReg',
-  'Cancelled Cheque/Passbook Copy': 'cheque',
-  'Rental Agreement or Property Proof': 'rental',
-  'Latest Electricity Bill': 'electricity',
-  'Background Clearance Declaration': 'background',
-  'Signed Franchise Agreement': 'agreement',
-  'Signed FDD Acknowledgement': 'fdd',
-  'PAN Card Copy': 'panCopy',
-  'Secondary ID (DL/Passport/Voter ID)': 'secondaryId',
+  aadhaar: 'aadhaar',
+  pan: 'pan',
+  photograph: 'photograph',
+  businessReg: 'businessReg',
+  cheque: 'cheque',
+  rental: 'rental',
+  electricity: 'electricity',
+  background: 'background',
+  agreement: 'agreement',
+  panCopy: 'panCopy',
+  secondaryId: 'secondaryId',
 };
