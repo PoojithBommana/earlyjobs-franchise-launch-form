@@ -1,11 +1,19 @@
-
 import { z } from 'zod';
 
 // Define a schema for each document to conditionally validate the driveLink
 const documentSchema = z.object({
   status: z.enum(['submitted', 'pending']),
   driveLink: z.string(), // Allow empty strings, validate URL format later
-})
+});
+
+const addressSchema = z.object({
+  street: z.string().min(1, 'Street address is required'),
+  town: z.string().min(1, 'Town/Locality is required'),
+  city: z.string().min(1, 'City is required'),
+  state: z.string().min(1, 'State is required'),
+  pinCode: z.string().min(6, 'Valid PIN code is required'),
+  country: z.string().min(1, 'Country is required'),
+});
 
 export const formSchema = z.object({
   franchiseeName: z.string().min(2, 'Full name is required'),
@@ -45,6 +53,13 @@ export const formSchema = z.object({
   declaration: z.boolean().refine(val => val === true, 'Declaration must be accepted'),
   submissionDate: z.date({ required_error: 'Submission date is required' }),
   signature: z.string().min(2, 'Signature is required'),
+  ownerFirstName: z.string().min(1, 'First name is required'),
+  ownerLastName: z.string().min(1, 'Last name is required'),
+  ownerPhone: z.string().regex(/^[6-9]\d{9}$/, 'Valid phone number is required'),
+  ownerEmail: z.string().email('Valid email address is required'),
+  permanentAddress: addressSchema,
+  currentAddress: addressSchema,
+  sameAsPermanent: z.boolean().default(false),
 }).refine(
   (data) => data.officeArea !== 'other' || (data.officeArea === 'other' && data.customArea && data.customArea.length > 0),
   {

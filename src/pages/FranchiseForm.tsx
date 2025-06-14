@@ -207,6 +207,27 @@ const FranchiseForm = () => {
         secondaryId: { status: 'pending', driveLink: '' },
       },
       declaration: false,
+      ownerFirstName: '',
+      ownerLastName: '',
+      ownerPhone: '',
+      ownerEmail: '',
+      permanentAddress: {
+        street: '',
+        town: '',
+        city: '',
+        state: '',
+        pinCode: '',
+        country: ''
+      },
+      currentAddress: {
+        street: '',
+        town: '',
+        city: '',
+        state: '',
+        pinCode: '',
+        country: ''
+      },
+      sameAsPermanent: false,
     },
   });
 
@@ -286,6 +307,12 @@ const FranchiseForm = () => {
       });
     }
   }, [error, toast]);
+
+  useEffect(() => {
+    if (form.watch('sameAsPermanent')) {
+      form.setValue('currentAddress', form.getValues('permanentAddress'));
+    }
+  }, [form.watch('sameAsPermanent'), form]);
 
   if (showSuccessMessage) {
     return <SuccessMessage onNewForm={() => setShowSuccessMessage(false)} />;
@@ -619,10 +646,267 @@ const FranchiseForm = () => {
               </CardContent>
             </Card>
 
-            {/* Section D: Documents Checklist */}
+            {/* Section D: Owner Details */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5 text-orange-600" />
+                  Owner Details
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="ownerFirstName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>First Name *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter first name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="ownerLastName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Last Name *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter last name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="ownerPhone"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Phone Number *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter 10-digit phone number" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="ownerEmail"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email Address *</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter email address" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div className="space-y-4">
+                  <FormLabel className="text-base font-semibold">Permanent Address *</FormLabel>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="permanentAddress.street"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Street Address</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter street address" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="permanentAddress.town"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Town/Locality</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter town/locality" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="permanentAddress.city"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>City</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter city" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="permanentAddress.state"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>State</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter state" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="permanentAddress.pinCode"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>PIN Code</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter PIN code" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="permanentAddress.country"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Country</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter country" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-3">
+                    <FormField
+                      control={form.control}
+                      name="sameAsPermanent"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <FormLabel className="text-sm font-normal">
+                            Current address same as permanent address
+                          </FormLabel>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  {!form.watch('sameAsPermanent') && (
+                    <div className="space-y-4">
+                      <FormLabel className="text-base font-semibold">Current Address *</FormLabel>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="currentAddress.street"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Street Address</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Enter street address" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="currentAddress.town"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Town/Locality</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Enter town/locality" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="currentAddress.city"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>City</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Enter city" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="currentAddress.state"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>State</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Enter state" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="currentAddress.pinCode"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>PIN Code</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Enter PIN code" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="currentAddress.country"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Country</FormLabel>
+                              <FormControl>
+                                <Input placeholder="Enter country" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Section E: Documents Checklist */}
             <DocumentsChecklist form={form} />
 
-            {/* Section E: Final Declarations */}
+            {/* Section F: Final Declarations */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
