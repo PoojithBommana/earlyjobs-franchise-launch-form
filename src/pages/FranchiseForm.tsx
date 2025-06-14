@@ -166,7 +166,7 @@ const DocumentsChecklist = () => {
               <FormItem style={{ display: 'flex', flexDirection: 'column' }}>
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between">
                   <FormLabel className="text-base font-medium">
-                    {label} {dualUpload || (key !== 'panCopy' && key !== 'secondaryId') ? '*' : '(Optional)'}
+                    {label} {dualUpload || (key !== 'panCopy') ? '*' : '(Optional)'}
                   </FormLabel>
                   <FormControl>
                     <div className="flex flex-col md:flex-row md:items-center md:gap-4 sm:mt-3">
