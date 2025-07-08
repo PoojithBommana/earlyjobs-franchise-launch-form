@@ -36,7 +36,7 @@ const documentsList = [
   // { key: 'background', label: 'Background Verification Report', dualUpload: false },
   { key: 'agreement', label: 'Signed Franchise Agreement', dualUpload: false },
   { key: 'panCopy', label: 'Business PAN ( If sole proprietor)', dualUpload: false },
-  { key: 'secondaryId', label: 'GST Certificate (Mandatory)', dualUpload: false },
+  { key: 'secondaryId', label: 'GST Certificate ', dualUpload: false },
 ];
 
 const DocumentsChecklist = () => {
@@ -166,7 +166,7 @@ const DocumentsChecklist = () => {
               <FormItem style={{ display: 'flex', flexDirection: 'column' }}>
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between">
                   <FormLabel className="text-base font-medium">
-                    {label} {dualUpload || (key !== 'panCopy') ? '*' : '(Optional)'}
+                    {label} {dualUpload || (key !== 'panCopy' && key !== 'secondaryId' && key !== 'agreement') ? '*' : '(Optional)'}
                   </FormLabel>
                   <FormControl>
                     <div className="flex flex-col md:flex-row md:items-center md:gap-4 sm:mt-3">
