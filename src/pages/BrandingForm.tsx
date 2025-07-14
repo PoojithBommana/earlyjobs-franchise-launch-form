@@ -635,7 +635,7 @@ const BrandingForm = () => {
               </Card>
 
               {/* Section D: Optional Local Print Support */}
-              <Card>
+              {/* <Card>
                 <CardHeader>
                   <CardTitle> Optional (Local Print Support)</CardTitle>
                 </CardHeader>
@@ -697,10 +697,10 @@ const BrandingForm = () => {
                     />
                   )}
                 </CardContent>
-              </Card>
+              </Card> */}
 
               {/* Form Submission Details */}
-              <Card>
+              {/* <Card>
                 <CardHeader>
                   <CardTitle>Form Submission</CardTitle>
                 </CardHeader>
@@ -767,7 +767,7 @@ const BrandingForm = () => {
                     <p><strong>Submit via:</strong> franchise@earlyjobs.in or directly to your Franchise Success Manager</p>
                   </div>
                 </CardContent>
-              </Card>
+              </Card> */}
 
               <div className="flex justify-center">
                 <Button

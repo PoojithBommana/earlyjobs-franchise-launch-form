@@ -240,7 +240,7 @@ const PhotoSubmissionForm = () => {
                   📸 SECTION 2: Photo Upload (Checklist-Based)
                 </CardTitle>
                 <p className="text-sm text-gray-600">
-                  Upload high-quality photos in JPG/PNG format, max 10 MB per file.
+                  Upload high-quality photos in JPG/PNG format. Images will be automatically compressed for optimal upload.
                 </p>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -254,7 +254,7 @@ const PhotoSubmissionForm = () => {
                         required
                         value={field.value}
                         onChange={field.onChange}
-                        franchiseId="Franchise"
+                        candidateId={form.watch('franchiseDistrict') || 'Default'}
                       />
                       <p className="text-xs text-gray-500">Wide view of your office from outside.</p>
                       <FormMessage />
@@ -272,7 +272,7 @@ const PhotoSubmissionForm = () => {
                         required
                         value={field.value}
                         onChange={field.onChange}
-                        franchiseId="Franchise"
+                        candidateId={form.watch('franchiseDistrict') || 'Default'}
                       />
                       <p className="text-xs text-gray-500">Entry point of your center with branding visible.</p>
                       <FormMessage />
@@ -290,7 +290,7 @@ const PhotoSubmissionForm = () => {
                         required
                         value={field.value}
                         onChange={field.onChange}
-                        franchiseId="Franchise"
+                        candidateId={form.watch('franchiseDistrict') || 'Default'}
                       />
                       <p className="text-xs text-gray-500">Show team desks, systems, or working space.</p>
                       <FormMessage />
@@ -307,7 +307,7 @@ const PhotoSubmissionForm = () => {
                         label="Meeting or Interview Space"
                         value={field.value}
                         onChange={field.onChange}
-                        franchiseId="Franchise"
+                        candidateId={form.watch('franchiseDistrict') || 'Default'}
                       />
                       <p className="text-xs text-gray-500">Optional: conference/meeting setup.</p>
                       <FormMessage />
@@ -326,7 +326,7 @@ const PhotoSubmissionForm = () => {
                         maxFiles={3}
                         value={field.value}
                         onChange={field.onChange}
-                        franchiseId="Franchise"
+                        candidateId={form.watch('franchiseDistrict') || 'Default'}
                       />
                       <p className="text-xs text-gray-500">Flex board, door sticker, logo wall poster (2-3 files allowed).</p>
                       <FormMessage />
@@ -343,7 +343,7 @@ const PhotoSubmissionForm = () => {
                         label="Team Photo"
                         value={field.value}
                         onChange={field.onChange}
-                        franchiseId="Franchise"
+                        candidateId={form.watch('franchiseDistrict') || 'Default'}
                       />
                       <p className="text-xs text-gray-500">Optional but preferred: Franchise owner + team, in t-shirts or by signage.</p>
                       <FormMessage />
