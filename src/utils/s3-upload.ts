@@ -32,12 +32,18 @@ export const uploadFileToS3 = async (file: File, franchiseId: string): Promise<s
     
     if (error.response) {
       // Server responded with error status
-      console.error('Server error response:', error.response.data);
-      toast.error(`Upload failed: ${error.response.data?.message || error.response.statusText}`);
+      console.error('Server error response:', error.response.status, error.response.data);
+      if (error.response.status === 413) {
+        toast.error("File too large. Please use files under 5MB.");
+      } else if (error.response.status === 0 || error.message.includes('CORS')) {
+        toast.error("Server configuration issue. Contact support for upload setup.");
+      } else {
+        toast.error(`Upload failed: ${error.response.data?.message || error.response.statusText}`);
+      }
     } else if (error.request) {
-      // Request was made but no response received
-      console.error('Network error:', error.request);
-      toast.error("Network error. Please check your connection and try again.");
+      // Request was made but no response received (CORS or network)
+      console.error('Network/CORS error:', error.request);
+      toast.error("Cannot connect to upload server. Please contact support.");
     } else {
       // Something else happened
       console.error('Unexpected error:', error.message);
