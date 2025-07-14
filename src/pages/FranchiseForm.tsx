@@ -161,7 +161,7 @@ const DocumentsChecklist = () => {
           <FormField
             key={key}
             control={form.control}
-            name={dualUpload ? `documents.${documentKeyMap[key]}.front` : `documents.${documentKeyMap[key]}.driveLink`}
+            name={dualUpload ? `documents.${documentKeyMap[key]}.front` as any : `documents.${documentKeyMap[key]}.driveLink` as any}
             render={({ field }) => (
               <FormItem style={{ display: 'flex', flexDirection: 'column' }}>
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between">

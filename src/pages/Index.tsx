@@ -20,7 +20,7 @@ const Index = () => {
           </p>
         </div>
 
-        <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <Card className="hover:shadow-lg transition-shadow">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -62,17 +62,36 @@ const Index = () => {
           <Card className="hover:shadow-lg transition-shadow border-blue-200 bg-blue-50">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <CheckCircle className="h-5 w-5 text-orange-600" />
+                <Palette className="h-5 w-5 text-orange-600" />
                 Branding Form
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-gray-600 mb-4">
-               Complete your franchise activation confirmation form to proceed with launch.
+                Complete your branding kit dispatch form for office setup materials.
               </p>
               <Link to="/branding-form">
                 <Button className="w-full bg-orange-600 hover:bg-orange-700">
                   Start Branding Form
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-lg transition-shadow border-blue-200 bg-blue-50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CheckCircle className="h-5 w-5 text-orange-600" />
+                Photo Submission
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-600 mb-4">
+                Submit photos of your completed branding setup for verification.
+              </p>
+              <Link to="/photo-submission">
+                <Button className="w-full bg-orange-600 hover:bg-orange-700">
+                  Submit Photos
                 </Button>
               </Link>
             </CardContent>

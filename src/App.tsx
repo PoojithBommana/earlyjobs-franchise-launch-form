@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import FranchiseForm from "./pages/FranchiseForm";
 import BrandingForm from "./pages/BrandingForm";
+import PhotoSubmissionForm from "./pages/PhotoSubmissionForm";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -21,6 +22,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/franchise-activation-form" element={<FranchiseForm />} />
           <Route path="/branding-form" element={<BrandingForm />} />
+          <Route path="/photo-submission" element={<PhotoSubmissionForm />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

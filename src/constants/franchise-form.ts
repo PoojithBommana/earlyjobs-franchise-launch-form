@@ -10,7 +10,7 @@ export type DocumentKey =
   | 'cheque'
   | 'rental'
   | 'electricity'
-  | 'background'
+  // | 'background'
   | 'agreement'
   | 'panCopy'
   | 'secondaryId';
@@ -24,7 +24,7 @@ export const documentsList: { key: DocumentKey; label: string; dualUpload?: bool
   { key: 'cheque', label: 'Cancelled Cheque' },
   { key: 'rental', label: 'Rental Agreement' },
   { key: 'electricity', label: 'Latest Electricity Bill' },
-  { key: 'background', label: 'Background Verification' },
+  // { key: 'background', label: 'Background Verification' },
   { key: 'agreement', label: 'Franchise Agreement' },
   { key: 'panCopy', label: 'PAN Copy' },
   { key: 'secondaryId', label: 'Secondary ID' },
@@ -39,7 +39,7 @@ export const documentKeyMap: Record<DocumentKey, keyof FormData['documents']> = 
   cheque: 'cheque',
   rental: 'rental',
   electricity: 'electricity',
-  background: 'background',
+  // background: 'background',
   agreement: 'agreement',
   panCopy: 'panCopy',
   secondaryId: 'secondaryId',
