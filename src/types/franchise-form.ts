@@ -23,8 +23,9 @@ const addressSchema = z.object({
   town: z.string().min(1, 'Town/Locality is required'),
   city: z.string().min(1, 'City is required'),
   state: z.string().min(1, 'State is required'),
-  pinCode: z.string().min(6, 'Valid PIN code is required'),
-  country: z.string().min(1, 'Country is required'),})
+  pinCode: z.string().min(4, 'Valid PIN code is required'),
+  country: z.string().min(1, 'Country is required'),
+});
 
 // Schema for Aadhaar (mandatory front and back)
 const aadhaarDocumentSchema = z.object({
@@ -58,7 +59,7 @@ export const formSchema = z.object({
   city: z.string().min(2, 'City is required'),
   stateProvince: z.string().min(2, 'State or province is required'),
   postalCode: z.string().min(5, 'Postal code is required'),
-  country: z.string().min(2, 'Country is required'),
+  country: z.string().min(1, 'Country is required'),
   officeArea: z.enum(['250-300', '300-400', 'other']),
   customArea: z.string().optional(),
   setupType: z.enum(['owned', 'rented', 'coworking']),
@@ -85,9 +86,12 @@ export const formSchema = z.object({
     }
   ),
   spocName: z.string().min(2, 'SPOC name is required'),
-  spocMobile: z.string().regex(/^[6-9]\d{9}$/, 'Valid mobile number required'),
+  spocMobile: z.string()
+    .min(10, 'Phone number must be at least 10 digits')
+    .max(15, 'Phone number must be at most 15 digits')
+    .regex(/^[\+]?[0-9\s\-\(\)]+$/, 'Please enter a valid phone number'),
   spocEmail: z.string().email('Valid email required'),
-  alternateContact: z.string().regex(/^[6-9]\d{9}$/, 'Valid alternate contact number required').optional(),
+  alternateContact: z.string().optional(),
   documents: z.object({
     aadhaar: aadhaarDocumentSchema,
     pan: mandatoryDocumentSchema,
@@ -103,12 +107,15 @@ export const formSchema = z.object({
   }),
   readinessConfirm: z.enum(['yes', 'not-yet']),
   notReadyReason: z.string().optional(),
-  declaration: z.literal(true, { errorMap: () => ({ message: 'Declaration must be accepted' }) }),
+  declaration: z.boolean().refine(val => val === true, { message: 'Declaration must be accepted' }),
   submissionDate: z.date({ required_error: 'Submission date is required' }),
   // signature: z.string().min(2, 'Signature is required'),
   ownerFirstName: z.string().min(1, 'First name is required'),
   ownerLastName: z.string().min(1, 'Last name is required'),
-  ownerPhone: z.string().regex(/^[6-9]\d{9}$/, 'Valid phone number is required'),
+  ownerPhone: z.string()
+    .min(10, 'Phone number must be at least 10 digits')
+    .max(15, 'Phone number must be at most 15 digits')
+    .regex(/^[\+]?[0-9\s\-\(\)]+$/, 'Please enter a valid phone number'),
   ownerEmail: z.string().email('Valid email address is required'),
   permanentAddress: addressSchema,
   currentAddress: addressSchema,

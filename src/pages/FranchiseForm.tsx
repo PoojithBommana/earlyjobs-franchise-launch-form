@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Calendar, MapPin, Building, Users, CheckCircle, Loader2, Upload, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -20,10 +20,10 @@ import type { FormData } from '@/types/franchise-form';
 import { formSchema } from '@/types/franchise-form';
 import { submitToGoogleSheets } from '@/utils/form-submission';
 import SuccessMessage from '@/components/SuccessMessage';
-import type { FieldErrors } from 'react-hook-form';
 import { documentKeyMap } from '@/constants/franchise-form';
+import { uploadFileToS3 } from '@/utils/s3-upload';
 
-type FileLink = { url: string; name: string };
+type FileLink = { name: string; url: string };
 
 const documentsList = [
   { key: 'aadhaar', label: 'Aadhaar Card (Front & Back)', dualUpload: true },
@@ -33,10 +33,9 @@ const documentsList = [
   { key: 'cheque', label: 'Cancelled Cheque', dualUpload: false },
   { key: 'rental', label: 'Rental Agreement', dualUpload: false },
   { key: 'electricity', label: 'Latest Electricity Bill', dualUpload: false },
-  // { key: 'background', label: 'Background Verification Report', dualUpload: false },
   { key: 'agreement', label: 'Signed Franchise Agreement', dualUpload: false },
-  { key: 'panCopy', label: 'Business PAN ( If sole proprietor)', dualUpload: false },
-  { key: 'secondaryId', label: 'GST Certificate ', dualUpload: false },
+  { key: 'panCopy', label: 'Business PAN (If sole proprietor)', dualUpload: false },
+  { key: 'secondaryId', label: 'GST Certificate', dualUpload: false },
 ];
 
 const DocumentsChecklist = () => {
@@ -44,78 +43,109 @@ const DocumentsChecklist = () => {
   const form = useFormContext<FormData>();
   const [fileLinks, setFileLinks] = useState<Record<string, { front?: FileLink; back?: FileLink }>>({});
   const [loading, setLoading] = useState<Record<string, { front?: boolean; back?: boolean }>>({});
-  const API_URL = import.meta.env.VITE_API_URL;
-  const uploadEndpoint = `${API_URL}/api/franchise/upload`;
 
   const handleUploadClick = useCallback(
     (key: string, side?: 'front' | 'back') => {
-      const input = document.createElement('input');
-      if (form.getValues('franchiseeName')) {
-        input.type = 'file';
-        input.accept = '.pdf,.jpg,.jpeg,.png';
-        input.onchange = async (event: Event) => {
-          const file = (event.target as HTMLInputElement).files?.[0];
-          if (file) {
-            try {
-              setLoading((prev) => ({
-                ...prev,
-                [key]: { ...prev[key], [side ?? 'front']: true },
-              }));
-              const formData = new FormData();
-              formData.append('file', file);
-              formData.append('userId', form.getValues('franchiseeName') || 'franchiseeName');
-              formData.append('key', `${key}${side ? `_${side}` : ''}`);
-
-              const response = await fetch(uploadEndpoint, {
-                method: 'POST',
-                body: formData,
-              });
-
-              if (!response.ok) {
-                throw new Error(`Upload failed: ${response.statusText}`);
-              }
-
-              const result = await response.json();
-              console.log('File upload result:', key, side);
-
-              const mappedKey = documentKeyMap[key as keyof typeof documentKeyMap];
-              console.log('mappedKey:', mappedKey);
-              const fieldKey = side ? `documents.${mappedKey}.${side}` : `documents.${mappedKey}.driveLink`;
-              form.setValue(fieldKey as any, result.webViewLink);
-              form.setValue(`documents.${mappedKey}.status` as any, 'submitted');
-
-              setFileLinks((prev) => ({
-                ...prev,
-                [key]: {
-                  ...prev[key],
-                  [side ?? 'front']: { url: result.webViewLink, name: file.name },
-                },
-              }));
-            } catch (error) {
-              console.error('File upload error:', error);
-              form.setValue(`documents.${documentKeyMap[key as keyof typeof documentKeyMap]}.status` as any, 'error');
-              toast({
-                title: 'Upload Failed',
-                description: 'Failed to upload the file. Please try again.',
-                variant: 'destructive',
-              });
-            } finally {
-              setLoading((prev) => ({
-                ...prev,
-                [key]: { ...prev[key], [side ?? 'front']: false },
-              }));
-            }
-          }
-        };
-        input.click();
-      } else {
+      if (!form.getValues('franchiseeName')) {
         toast({
           title: 'Your Full Name is Required',
           description: 'Please enter your Full Name before uploading documents.',
           variant: 'destructive',
         });
         window.scrollTo(0, 0);
+        return;
       }
+
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.pdf,.jpg,.jpeg,.png,.doc,.docx';
+      input.onchange = async (event: Event) => {
+        const file = (event.target as HTMLInputElement).files?.[0];
+        if (file) {
+          try {
+            setLoading((prev) => ({
+              ...prev,
+              [key]: { ...prev[key], [side ?? 'front']: true },
+            }));
+
+            // Validate file type
+            const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+            if (!allowedTypes.includes(file.type)) {
+              throw new Error('Invalid file type. Please upload PDF, JPG, PNG, DOC, or DOCX files only.');
+            }
+
+            // Validate file size based on file type
+            const isImage = file.type.startsWith('image/');
+            const isPDF = file.type === 'application/pdf';
+            
+            let maxSizeInMB;
+            let fileTypeLabel;
+            
+            if (isPDF) {
+              maxSizeInMB = 2; // 2MB for PDFs
+              fileTypeLabel = 'PDF';
+            } else if (isImage) {
+              maxSizeInMB = 5; // 5MB for images
+              fileTypeLabel = 'Image';
+            } else {
+              maxSizeInMB = 3; // 3MB for other documents
+              fileTypeLabel = 'Document';
+            }
+            
+            const maxSize = maxSizeInMB * 1024 * 1024;
+            if (file.size > maxSize) {
+              throw new Error(`${fileTypeLabel} size must be less than ${maxSizeInMB}MB.`);
+            }
+
+            // Create field name for S3 upload
+            const userId = form.getValues('franchiseeName');
+            const fieldName = side ? `${key}_${side}` : `${key}`;
+
+            // Upload to S3
+            const uploadedUrl = await uploadFileToS3(file, userId, fieldName);
+            
+            if (uploadedUrl) {
+              const mappedKey = documentKeyMap[key as keyof typeof documentKeyMap];
+              const fieldKey = side ? `documents.${mappedKey}.${side}` : `documents.${mappedKey}.driveLink`;
+              
+              // Set the S3 URL in the form
+              form.setValue(fieldKey as any, uploadedUrl);
+              form.setValue(`documents.${mappedKey}.status` as any, 'submitted');
+
+              setFileLinks((prev) => ({
+                ...prev,
+                [key]: {
+                  ...prev[key],
+                  [side ?? 'front']: { name: file.name, url: uploadedUrl },
+                },
+              }));
+
+              toast({
+                title: 'Upload Successful',
+                description: `${file.name} has been uploaded successfully.`,
+              });
+            } else {
+              throw new Error('Upload failed. Please try again.');
+            }
+          } catch (error) {
+            console.error('File upload error:', error);
+            const errorMessage = error instanceof Error ? error.message : 'Failed to upload file. Please try again.';
+            
+            form.setValue(`documents.${documentKeyMap[key as keyof typeof documentKeyMap]}.status` as any, 'error');
+            toast({
+              title: 'Upload Failed',
+              description: errorMessage,
+              variant: 'destructive',
+            });
+          } finally {
+            setLoading((prev) => ({
+              ...prev,
+              [key]: { ...prev[key], [side ?? 'front']: false },
+            }));
+          }
+        }
+      };
+      input.click();
     },
     [form, toast]
   );
@@ -139,15 +169,6 @@ const DocumentsChecklist = () => {
     [form]
   );
 
-  useEffect(() => {
-    return () => {
-      Object.values(fileLinks).forEach(({ front, back }) => {
-        if (front?.url) URL.revokeObjectURL(front.url);
-        if (back?.url) URL.revokeObjectURL(back.url);
-      });
-    };
-  }, [fileLinks]);
-
   return (
     <Card>
       <CardHeader>
@@ -162,7 +183,7 @@ const DocumentsChecklist = () => {
             key={key}
             control={form.control}
             name={dualUpload ? `documents.${documentKeyMap[key]}.front` as any : `documents.${documentKeyMap[key]}.driveLink` as any}
-            render={({ field }) => (
+            render={() => (
               <FormItem style={{ display: 'flex', flexDirection: 'column' }}>
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between">
                   <FormLabel className="text-base font-medium">
@@ -255,7 +276,7 @@ const DocumentsChecklist = () => {
                           ) : (
                             <>
                               <Upload className="h-4 w-4" />
-                              Upload
+                              Upload Document
                             </>
                           )}
                         </Button>
@@ -286,12 +307,21 @@ const DocumentsChecklist = () => {
             )}
           />
         ))}
+        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-sm text-blue-800">
+            <strong>File Requirements:</strong>
+          </p>
+          <ul className="text-sm text-blue-700 mt-2 space-y-1">
+            <li>• Accepted formats: PDF, JPG, PNG, DOC, DOCX</li>
+            <li>• File size limits: PDFs (max 2MB), Images (max 5MB), Documents (max 3MB)</li>
+            <li>• Files will be uploaded to secure cloud storage</li>
+            <li>• Ensure documents are clear and readable</li>
+          </ul>
+        </div>
       </CardContent>
     </Card>
   );
 };
-
-
 
 const FranchiseForm = () => {
   const { toast } = useToast();
@@ -302,6 +332,18 @@ const FranchiseForm = () => {
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      franchiseeName: '',
+      businessName: '',
+      franchiseLocation: '',
+      streetAddress: '',
+      townLocality: '',
+      city: '',
+      stateProvince: '',
+      postalCode: '',
+      country: 'India',
+      officeArea: undefined,
+      customArea: '',
+      setupType: undefined,
       infrastructure: {
         electricity: false,
         desks: false,
@@ -318,6 +360,10 @@ const FranchiseForm = () => {
         cctvCoverage: false,
         smartPhone: false,
       },
+      spocName: '',
+      spocMobile: '',
+      spocEmail: '',
+      alternateContact: '',
       documents: {
         aadhaar: { status: 'pending', front: '', back: '' },
         pan: { status: 'pending', driveLink: '' },
@@ -326,12 +372,13 @@ const FranchiseForm = () => {
         cheque: { status: 'pending', driveLink: '' },
         rental: { status: 'pending', driveLink: '' },
         electricity: { status: 'pending', driveLink: '' },
-        // background: { status: 'pending', driveLink: '' },
         agreement: { status: 'pending', driveLink: '' },
         panCopy: { status: 'pending', driveLink: '' },
         secondaryId: { status: 'pending', driveLink: '' },
       },
-      // declaration: false,
+      readinessConfirm: undefined,
+      notReadyReason: '',
+      declaration: false,
       ownerFirstName: '',
       ownerLastName: '',
       ownerPhone: '',
@@ -342,7 +389,7 @@ const FranchiseForm = () => {
         city: '',
         state: '',
         pinCode: '',
-        country: ''
+        country: 'India'
       },
       currentAddress: {
         street: '',
@@ -350,14 +397,13 @@ const FranchiseForm = () => {
         city: '',
         state: '',
         pinCode: '',
-        country: ''
+        country: 'India'
       },
       sameAsPermanent: false,
     },
   });
 
   const onSubmit = useCallback(async (data: FormData) => {
-    console.log(data);
     setIsSubmitting(true);
     setError(null);
 
@@ -369,34 +415,25 @@ const FranchiseForm = () => {
       'cheque',
       'rental',
       'electricity',
-      'background',
       'agreement',
       'panCopy',
       'secondaryId',
     ];
 
     const missingDocuments = documentKeys.filter((key) => {
-      // Safely check if the document exists first
       const doc = data.documents[key as keyof typeof data.documents];
       if (!doc) return true;
-
-      // Special case for aadhaar which has front and back
       if (key === 'aadhaar') {
-        return !('front' in doc && 'back' in doc && doc.front && doc.back);
+        return !('front' in doc && 'back' in doc && doc.front && doc.back && 
+                 doc.front.trim() !== '' && doc.back.trim() !== '');
       }
-
-      // For all other documents, check driveLink
       return !doc.driveLink || doc.driveLink.trim() === '';
     }).filter(key => 
-      // Filter out 'background' as it's commented out in your form
-      key !== 'background' && 
-      // Filter out optional documents (panCopy is optional)
-      key !== 'panCopy'
+      key !== 'panCopy' && 
+      key !== 'secondaryId' && 
+      key !== 'agreement'
     );
 
-    console.log('Missing Documents:', missingDocuments);
-
-    // Adjust the validation to exclude optional documents
     if (missingDocuments.length > 0) {
       setIsSubmitting(false);
       toast({
@@ -413,7 +450,7 @@ const FranchiseForm = () => {
         setShowSuccessMessage(true);
         form.reset();
         toast({
-          title: "Form Submission Successfully",
+          title: "Form Submission Successful",
           description: "Your franchise application form has been submitted.",
         });
       }
@@ -478,7 +515,7 @@ const FranchiseForm = () => {
           </p>
         </div>
 
-        <Form {...form}>
+        <FormProvider {...form}>
           <form onSubmit={form.handleSubmit(onSubmit, onError)} className="space-y-8">
             {/* Section A: Franchise Identification */}
             <Card>
@@ -592,7 +629,7 @@ const FranchiseForm = () => {
                       <FormItem>
                         <FormLabel>House / Building / Apartment / Mall / Business Center</FormLabel>
                         <FormControl>
-                          <Input placeholder="Building name, street name, and number" {...field} />
+                          <Input placeholder="Building name, street name Directorate of Town and Country Planning, and number" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -605,7 +642,7 @@ const FranchiseForm = () => {
                       <FormItem>
                         <FormLabel>Town/area*</FormLabel>
                         <FormControl>
-                          <Input placeholder="Neighborhood or local area name" {...field} />
+                        <Input placeholder="Neighborhood or local area name" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -649,6 +686,19 @@ const FranchiseForm = () => {
                         <FormLabel>Postal Code/ZIP Code*</FormLabel>
                         <FormControl>
                           <Input placeholder="Postal code or ZIP code" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="country"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Country*</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter country" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -1115,7 +1165,7 @@ const FranchiseForm = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <CheckCircle className="h-5 w-5 text-orange-600" />
+                  <CheckCircle className="h-0 w-5 text-orange-600" />
                   Final Declarations
                 </CardTitle>
               </CardHeader>
@@ -1223,7 +1273,6 @@ const FranchiseForm = () => {
                       </FormItem>
                     )}
                   />
-                 
                 </div>
               </CardContent>
             </Card>
@@ -1246,7 +1295,7 @@ const FranchiseForm = () => {
               </Button>
             </div>
           </form>
-        </Form>
+        </FormProvider>
       </div>
     </div>
   );

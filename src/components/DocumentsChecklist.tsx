@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { FileText } from 'lucide-react';
 import { FormData } from '@/types/franchise-form';
 import { documentsList, documentKeyMap } from '@/constants/franchise-form';
-import { openPicker } from '@/utils/google-picker';
+// import { openPicker } from '@/utils/google-picker';
 import { useToast } from '@/hooks/use-toast';
 
 interface DocumentsChecklistProps {
@@ -88,94 +88,94 @@ const DocumentsChecklist: React.FC<DocumentsChecklistProps> = ({ form }) => {
                                   variant="outline"
                                   size="sm"
                                   onClick={() => {
-                                    openPicker(
-                                      {
-                                        clientId: "124195828012-nsgud3uee4fovodbpr6132pj4t14fgct.apps.googleusercontent.com",
-                                        developerKey: "AIzaSyD91U-yC_Zak67WzYvwAFWUvzpJCyltPiA",
-                                        viewId: "DOCS",
-                                        showUploadView: true,
-                                        showUploadFolders: true,
-                                        supportDrives: true,
-                                        multiselect: false,
-                                        callbackFunction: (data) => {
-                                          console.log("Picker data:", data);
-                                          if (data.action === 'picked' && data.docs?.[0]) {
-                                            const fileId = data.docs[0].id;
-                                                console.log("fileId:", fileId);
-                                                const linkOut = `https://drive.google.com/file/d/${fileId}/view?usp=sharing`;
-                                                console.log("Link Out:", linkOut);
-                                                console.log("schemaKey:", documentsList);
-                                                form.setValue(`documents.${schemaKey}.driveLink`, linkOut)
+                                    // openPicker(
+                                    //   {
+                                    //     clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID || "124195828012-nsgud3uee4fovodbpr6132pj4t14fgct.apps.googleusercontent.com",
+                                    //     developerKey: import.meta.env.VITE_GOOGLE_DEVELOPER_KEY || "AIzaSyD91U-yC_Zak67WzYvwAFWUvzpJCyltPiA",
+                                    //     viewId: "DOCS",
+                                    //     showUploadView: true,
+                                    //     showUploadFolders: true,
+                                    //     supportDrives: true,
+                                    //     multiselect: false,
+                                    //     callbackFunction: (data) => {
+                                    //       console.log("Picker data:", data);
+                                    //       if (data.action === 'picked' && data.docs?.[0]) {
+                                    //         const fileId = data.docs[0].id;
+                                    //             console.log("fileId:", fileId);
+                                    //             const linkOut = `https://drive.google.com/file/d/${fileId}/view?usp=sharing`;
+                                    //             console.log("Link Out:", linkOut);
+                                    //             console.log("schemaKey:", documentsList);
+                                    //             form.setValue(`documents.${schemaKey}.driveLink`, linkOut)
 
-                                            fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?fields=permissions`, {
-                                              headers: {
-                                                Authorization: `Bearer ${data.oauthToken || window.google.accounts.oauth2.getAccessToken()}`,
-                                              },
-                                            })
-                                              .then((res) => res.json())
-                                              .then((fileData) => {
-                                                const isShared = fileData.permissions?.some(
-                                                  (perm) => perm.type === 'anyone' && perm.role !== 'private'
-                                                );
+                                    //         fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?fields=permissions`, {
+                                    //           headers: {
+                                    //             Authorization: `Bearer ${data.oauthToken || window.google.accounts.oauth2.getAccessToken()}`,
+                                    //           },
+                                    //         })
+                                    //           .then((res) => res.json())
+                                    //           .then((fileData) => {
+                                    //             const isShared = fileData.permissions?.some(
+                                    //               (perm) => perm.type === 'anyone' && perm.role !== 'private'
+                                    //             );
 
-                                                const shareableLink = `https://drive.google.com/file/d/${fileId}/view?usp=sharing`;
-                                                console.log("Shareable Link:", shareableLink, "isShared:", isShared);
-                                                if (!isShared) {
-                                                  fetch(`https://www.googleapis.com/drive/v3/files/${fileId}/permissions`, {
-                                                    method: 'POST',
-                                                    headers: {
-                                                      Authorization: `Bearer ${data.oauthToken || window.google.accounts.oauth2.getAccessToken()}`,
-                                                      'Content-Type': 'application/json',
-                                                    },
-                                                    body: JSON.stringify({
-                                                      role: 'reader',
-                                                      type: 'anyone',
-                                                    }),
-                                                  })
-                                                    .then(() => {
-                                                      form.setValue(`documents.${schemaKey}.driveLink`, shareableLink, {
-                                                        shouldValidate: true,
-                                                        shouldDirty: true,
-                                                      });
-                                                      toast({
-                                                        title: "File Selected",
-                                                        description: "File permissions updated and link added.",
-                                                      });
-                                                    })
-                                                    .catch((error) => {
-                                                      toast({
-                                                        title: "Permission Error",
-                                                        description: `Failed to set file permissions: ${error.message}`,
-                                                        variant: "destructive",
-                                                      });
-                                                    });
-                                                } else {
-                                                  form.setValue(`documents.${schemaKey}.driveLink`, shareableLink, {
-                                                    shouldValidate: true,
-                                                    shouldDirty: true,
-                                                  });
-                                                  toast({
-                                                    title: "File Selected",
-                                                    description: "Shareable link added to the form.",
-                                                  });
-                                                }
-                                              })
-                                              .catch((error) => {
-                                                toast({
-                                                  title: "Drive Error",
-                                                  description: `Failed to fetch permissions: ${error.message}`,
-                                                  variant: "destructive",
-                                                });
-                                              });
-                                          }
-                                        },
-                                      },
-                                      toast
-                                    );
+                                    //             const shareableLink = `https://drive.google.com/file/d/${fileId}/view?usp=sharing`;
+                                    //             console.log("Shareable Link:", shareableLink, "isShared:", isShared);
+                                    //             if (!isShared) {
+                                    //               fetch(`https://www.googleapis.com/drive/v3/files/${fileId}/permissions`, {
+                                    //                 method: 'POST',
+                                    //                 headers: {
+                                    //                   Authorization: `Bearer ${data.oauthToken || window.google.accounts.oauth2.getAccessToken()}`,
+                                    //                   'Content-Type': 'application/json',
+                                    //                 },
+                                    //                 body: JSON.stringify({
+                                    //                   role: 'reader',
+                                    //                   type: 'anyone',
+                                    //                 }),
+                                    //               })
+                                    //                 .then(() => {
+                                    //                   form.setValue(`documents.${schemaKey}.driveLink`, shareableLink, {
+                                    //                     shouldValidate: true,
+                                    //                     shouldDirty: true,
+                                    //                   });
+                                    //                   toast({
+                                    //                     title: "File Selected",
+                                    //                     description: "File permissions updated and link added.",
+                                    //                   });
+                                    //                 })
+                                    //                 .catch((error) => {
+                                    //                   toast({
+                                    //                     title: "Permission Error",
+                                    //                     description: `Failed to set file permissions: ${error.message}`,
+                                    //                     variant: "destructive",
+                                    //                   });
+                                    //                 });
+                                    //             } else {
+                                    //               form.setValue(`documents.${schemaKey}.driveLink`, shareableLink, {
+                                    //                 shouldValidate: true,
+                                    //                 shouldDirty: true,
+                                    //               });
+                                    //               toast({
+                                    //                 title: "File Selected",
+                                    //                 description: "Shareable link added to the form.",
+                                    //               });
+                                    //             }
+                                    //           })
+                                    //           .catch((error) => {
+                                    //             toast({
+                                    //               title: "Drive Error",
+                                    //               description: `Failed to fetch permissions: ${error.message}`,
+                                    //               variant: "destructive",
+                                    //             });
+                                    //           });
+                                    //       }
+                                    //     },
+                                    //   },
+                                    //   toast
+                                    // );
                                   }}
                                   className="text-xs"
                                 >
-                                  upload
+                                  Select from Drive
                                 </Button>
                               </FormControl>
                               {field.value && (
@@ -199,7 +199,7 @@ const DocumentsChecklist: React.FC<DocumentsChecklistProps> = ({ form }) => {
         </div>
 
         <div className="mt-4 text-sm text-gray-500">
-          <p>* Click "upload" to choose a file from Google Drive. A shareable link will be added automatically.</p>
+          <p>* Click "Select from Drive" to choose a file from Google Drive. A shareable link will be added automatically.</p>
         </div>
       </CardContent>
     </Card>

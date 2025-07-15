@@ -54,9 +54,9 @@ export const brandingFormSchema = z.object({
   localPrintingPreference: z.boolean().default(false),
   fileFormat: z.enum(['PDF', 'Corel', 'AI', 'PNG']).optional(),
 
-  // Form submission details
-  submissionDate: z.date(),
-  signature: z.string().min(1, "Signature is required"),
+  // Form submission details (optional since they're not in the UI)
+  submissionDate: z.date().optional(),
+  signature: z.string().optional(),
 });
 
 export type BrandingFormData = z.infer<typeof brandingFormSchema>;

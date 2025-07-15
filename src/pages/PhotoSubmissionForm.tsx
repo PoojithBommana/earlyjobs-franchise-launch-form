@@ -16,7 +16,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { PhotoUploadField } from '@/components/PhotoUploadField';
-import { photoSubmissionSchema, PhotoSubmissionFormData, franchiseDistricts } from '@/types/photo-submission-form';
+import { photoSubmissionSchema, PhotoSubmissionFormData } from '@/types/photo-submission-form';
+import { submitPhotoFormToGoogleSheets } from '@/utils/photo-submission';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -27,13 +28,13 @@ const PhotoSubmissionForm = () => {
   const form = useForm<PhotoSubmissionFormData>({
     resolver: zodResolver(photoSubmissionSchema),
     defaultValues: {
-      fullName: '',
-      franchiseDistrict: '',
-      officeAddress: '',
-      brandingAsPerChecklist: undefined,
-      additionalNotes: '',
-      declaration: false,
-      brandingElements: [],
+      Full_Name: '',
+      Franchise_District: '',
+      Office_Address: '',
+      Branding_Complete: undefined,
+      Additional_Notes: '',
+      Declaration_Confirmed: false,
+      Branding_Elements_Count: '',
     },
   });
 
@@ -41,37 +42,12 @@ const PhotoSubmissionForm = () => {
     setIsLoading(true);
     
     try {
-      // Prepare data for submission
-      const submissionData = {
-        ...data,
-        brandingCompletionDate: format(data.brandingCompletionDate, 'MM/dd/yyyy'),
-        submissionDate: format(new Date(), 'MM/dd/yyyy'),
-        formFilledAt: new Date().toLocaleString('en-US', {
-          weekday: 'short',
-          month: 'long',
-          day: 'numeric',
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit',
-          timeZone: 'Asia/Kolkata',
-          timeZoneName: 'short'
-        }),
-        formType: 'Photo Submission',
-        sheetTab: 'Photo Submissions'
-      };
+      console.log('🚀 Starting photo form submission with data:', data);
 
-      // Submit to SheetDB API (same as other forms)
-      const response = await fetch('https://sheetdb.io/api/v1/py99bvu81b75t', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          data: [submissionData]
-        }),
-      });
-
-      if (response.ok) {
+      // Submit using the proper photo submission function
+      const result = await submitPhotoFormToGoogleSheets(data);
+      
+      if (result.success) {
         toast.success('Photo submission form submitted successfully!');
         setIsSubmitted(true);
       } else {
@@ -79,7 +55,7 @@ const PhotoSubmissionForm = () => {
       }
     } catch (error) {
       console.error('Submission error:', error);
-      toast.error('Failed to submit form. Please try again.');
+      toast.error(error instanceof Error ? error.message : 'Failed to submit form. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -134,7 +110,7 @@ const PhotoSubmissionForm = () => {
               <CardContent className="space-y-6">
                 <FormField
                   control={form.control}
-                  name="fullName"
+                  name="Full_Name"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Full Name <span className="text-red-500">*</span></FormLabel>
@@ -148,24 +124,16 @@ const PhotoSubmissionForm = () => {
 
                 <FormField
                   control={form.control}
-                  name="franchiseDistrict"
+                  name="Franchise_District"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Franchise District Name <span className="text-red-500">*</span></FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select your district" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {franchiseDistricts.map((district) => (
-                            <SelectItem key={district} value={district}>
-                              {district}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <FormControl>
+                        <Input 
+                          placeholder="Enter your district/city name" 
+                          {...field} 
+                        />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -173,7 +141,7 @@ const PhotoSubmissionForm = () => {
 
                 <FormField
                   control={form.control}
-                  name="officeAddress"
+                  name="Office_Address"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Office Full Address <span className="text-red-500">*</span></FormLabel>
@@ -191,7 +159,7 @@ const PhotoSubmissionForm = () => {
 
                 <FormField
                   control={form.control}
-                  name="brandingCompletionDate"
+                  name="Branding_Completion_Date"
                   render={({ field }) => (
                     <FormItem className="flex flex-col">
                       <FormLabel>Date of Branding Completion <span className="text-red-500">*</span></FormLabel>
@@ -246,15 +214,15 @@ const PhotoSubmissionForm = () => {
               <CardContent className="space-y-6">
                 <FormField
                   control={form.control}
-                  name="frontViewPhoto"
+                  name="Front_View_Photo"
                   render={({ field }) => (
                     <FormItem>
                       <PhotoUploadField
+                        candidateId={form.watch('Full_Name') || 'Default'}
                         label="Front View of Office with Signboard"
                         required
                         value={field.value}
                         onChange={field.onChange}
-                        candidateId={form.watch('franchiseDistrict') || 'Default'}
                       />
                       <p className="text-xs text-gray-500">Wide view of your office from outside.</p>
                       <FormMessage />
@@ -264,7 +232,7 @@ const PhotoSubmissionForm = () => {
 
                 <FormField
                   control={form.control}
-                  name="receptionAreaPhoto"
+                  name="Reception_Photo"
                   render={({ field }) => (
                     <FormItem>
                       <PhotoUploadField
@@ -272,9 +240,8 @@ const PhotoSubmissionForm = () => {
                         required
                         value={field.value}
                         onChange={field.onChange}
-                        candidateId={form.watch('franchiseDistrict') || 'Default'}
+                        candidateId={form.watch('Full_Name') || 'Default'}
                       />
-                      <p className="text-xs text-gray-500">Entry point of your center with branding visible.</p>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -282,17 +249,16 @@ const PhotoSubmissionForm = () => {
 
                 <FormField
                   control={form.control}
-                  name="workstationsPhoto"
+                  name="Workstations_Photo"
                   render={({ field }) => (
                     <FormItem>
                       <PhotoUploadField
+                        candidateId={form.watch('Full_Name') || 'Default'}
                         label="Workstations or Inside Office View"
                         required
                         value={field.value}
                         onChange={field.onChange}
-                        candidateId={form.watch('franchiseDistrict') || 'Default'}
                       />
-                      <p className="text-xs text-gray-500">Show team desks, systems, or working space.</p>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -300,35 +266,33 @@ const PhotoSubmissionForm = () => {
 
                 <FormField
                   control={form.control}
-                  name="meetingSpacePhoto"
+                  name="Meeting_Space_Photo"
                   render={({ field }) => (
                     <FormItem>
                       <PhotoUploadField
                         label="Meeting or Interview Space"
                         value={field.value}
                         onChange={field.onChange}
-                        candidateId={form.watch('franchiseDistrict') || 'Default'}
+                        candidateId={form.watch('Full_Name') || 'Default'}
                       />
-                      <p className="text-xs text-gray-500">Optional: conference/meeting setup.</p>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
-                  name="brandingElements"
+                  name="Branding_Elements_Count"
                   render={({ field }) => (
                     <FormItem>
-                      <PhotoUploadField
-                        label="Close-ups of Branding Elements"
-                        multiple
-                        maxFiles={3}
-                        value={field.value}
-                        onChange={field.onChange}
-                        candidateId={form.watch('franchiseDistrict') || 'Default'}
-                      />
-                      <p className="text-xs text-gray-500">Flex board, door sticker, logo wall poster (2-3 files allowed).</p>
+                      <FormLabel>Number of Branding Elements (Optional)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number"
+                          placeholder="How many branding elements are installed?"
+                          {...field} 
+                        />
+                      </FormControl>
+                      <p className="text-xs text-gray-500">Count of flex boards, door stickers, logo walls, etc.</p>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -336,23 +300,21 @@ const PhotoSubmissionForm = () => {
 
                 <FormField
                   control={form.control}
-                  name="teamPhoto"
+                  name="Team_Photo"
                   render={({ field }) => (
                     <FormItem>
                       <PhotoUploadField
                         label="Team Photo"
                         value={field.value}
                         onChange={field.onChange}
-                        candidateId={form.watch('franchiseDistrict') || 'Default'}
+                        candidateId={form.watch('Full_Name') || 'Default'}
                       />
-                      <p className="text-xs text-gray-500">Optional but preferred: Franchise owner + team, in t-shirts or by signage.</p>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
               </CardContent>
             </Card>
-
             {/* Section 3: Confirmation & Notes */}
             <Card>
               <CardHeader>
@@ -363,7 +325,7 @@ const PhotoSubmissionForm = () => {
               <CardContent className="space-y-6">
                 <FormField
                   control={form.control}
-                  name="brandingAsPerChecklist"
+                  name="Branding_Complete"
                   render={({ field }) => (
                     <FormItem className="space-y-3">
                       <FormLabel>Was all branding done as per the checklist? <span className="text-red-500">*</span></FormLabel>
@@ -390,7 +352,7 @@ const PhotoSubmissionForm = () => {
 
                 <FormField
                   control={form.control}
-                  name="additionalNotes"
+                  name="Additional_Notes"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Additional Notes (Optional)</FormLabel>
@@ -408,7 +370,7 @@ const PhotoSubmissionForm = () => {
 
                 <FormField
                   control={form.control}
-                  name="declaration"
+                  name="Declaration_Confirmed"
                   render={({ field }) => (
                     <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                       <FormControl>

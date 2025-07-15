@@ -29,20 +29,26 @@ const BrandingForm = () => {
     resolver: zodResolver(brandingFormSchema),
     defaultValues: {
       localPrintingPreference: false,
-      submissionDate: new Date(),
     },
   });
 
   const onSubmit = async (data: BrandingFormData) => {
     setIsSubmitting(true);
+    console.log('Submitting branding form with data:', data);
+    
     try {
-      await submitBrandingForm(data);
+      // Validate the form data
+      const validatedData = brandingFormSchema.parse(data);
+      console.log('Form validation passed:', validatedData);
+      
+      await submitBrandingForm(validatedData);
       setIsSubmitted(true);
       toast({
         title: "Form Submitted Successfully!",
         description: "Your branding form has been submitted to franchise@earlyjobs.in",
       });
     } catch (error) {
+      console.error('Form submission error:', error);
       toast({
         title: "Submission Failed",
         description: error instanceof Error ? error.message : "Please try again later.",
