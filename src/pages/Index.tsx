@@ -96,6 +96,25 @@ const Index = () => {
               </Link>
             </CardContent>
           </Card>
+
+          <Card className="hover:shadow-lg transition-shadow border-blue-200 bg-blue-50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5 text-orange-600" />
+                Feedback Form
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-600 mb-4">
+                Complete your feedback form to help us improve the franchise launch process.
+              </p>
+              <Link to="/feedback-form">
+                <Button className="w-full bg-orange-600 hover:bg-orange-700">
+                  Feedback Form
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
         </div>
 
         
