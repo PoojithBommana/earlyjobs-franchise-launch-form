@@ -3,6 +3,7 @@ import React, { useState, FormEvent, ChangeEvent } from 'react';
 interface FormData {
   name: string;
   email: string;
+  timestamp?: string;
   conceptClarity: string;
   questionsAddressed: string;
   confidenceFactors: string[];
@@ -15,7 +16,7 @@ interface FormData {
   futureVision: string;
   positiveStandout: string;
   improvementSuggestion: string;
-  overallExperience: string;
+  overallExperience: number;
 }
 
 const FeedbackForm: React.FC = () => {
@@ -34,9 +35,11 @@ const FeedbackForm: React.FC = () => {
     futureVision: '',
     positiveStandout: '',
     improvementSuggestion: '',
-    overallExperience: '',
+    overallExperience: 0,
+    timestamp: new Date().toISOString()
   });
   const [currentSection, setCurrentSection] = useState<number>(1);
+  const [showPopup, setShowPopup] = useState<boolean>(false);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -61,7 +64,32 @@ const FeedbackForm: React.FC = () => {
         data: { ...formData, timestamp },
       }),
     });
-    if (response.ok) alert('Feedback submitted successfully!');
+    if (response.ok) {
+      setShowPopup(true);
+    }
+  };
+
+  const closePopup = () => {
+    setShowPopup(false);
+    setFormData({
+      name: '',
+      email: '',
+      conceptClarity: '',
+      questionsAddressed: '',
+      confidenceFactors: [],
+      wellInformed: '',
+      firstSevenDays: '',
+      toolsUseful: '',
+      supportiveAreas: [],
+      confidenceBuilding: '',
+      brandRepresentation: '',
+      futureVision: '',
+      positiveStandout: '',
+      improvementSuggestion: '',
+      overallExperience: 0,
+      timestamp: new Date().toISOString(),
+    });
+    setCurrentSection(1);
   };
 
   const nextSection = () => {
@@ -106,7 +134,7 @@ const FeedbackForm: React.FC = () => {
           EarlyJobs Franchise Feedback
         </h1>
         <p className="text-center text-gray-600 mb-4 sm:mb-6 md:mb-8 font-medium text-sm sm:text-base max-w-2xl mx-auto">
-          Your feedback is invaluable! Please take a moment to share your thoughts to help us elevate the EarlyJobs franchise experience.
+          Your feedback is invaluable to us! By sharing your insights, you play a vital role in shaping the future of EarlyJobs. Your thoughts help us refine our processes, enhance support, and create a more empowering experience for all franchise partners.
         </p>
 
         <div className="flex flex-wrap justify-center mb-4 sm:mb-6 gap-2 sm:gap-3">
@@ -460,7 +488,7 @@ const FeedbackForm: React.FC = () => {
                       <input
                         type="radio"
                         name="overallExperience"
-                        value={option}
+                        value={parseInt(option[0])}
                         onChange={handleChange}
                         required
                         className="mr-2 text-orange-500 focus:ring-orange-500 h-4 sm:h-5"
@@ -518,7 +546,24 @@ const FeedbackForm: React.FC = () => {
         </form>
       </div>
 
-      <style >{`
+      {showPopup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-2xl max-w-md w-full mx-4 border border-orange-200 transform transition-all duration-300 scale-100">
+            <h2 className="text-xl sm:text-2xl font-semibold text-orange-600 mb-4 text-center">Thank You!</h2>
+            <p className="text-gray-600 mb-6 text-sm sm:text-base text-center">
+              Your feedback is truly appreciated and will play a pivotal role in enhancing the EarlyJobs franchise experience.
+            </p>
+            <button
+              onClick={closePopup}
+              className="w-full px-4 py-2 bg-orange-500 text-white rounded-lg font-semibold text-sm sm:text-base hover:bg-orange-600 transition-all duration-300 shadow-md hover:shadow-lg"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
+      <style>{`
         input[type='radio'],
         input[type='checkbox'] {
           accent-color: #f97316;
