@@ -15,7 +15,7 @@ export const submitBrandingForm = async (data: BrandingFormData) => {
 
     const transformedData = {
       "Form Type": "Branding Kit",
-      "Franchise Owner Name": data.franchiseOwnerName,
+      "Franchise OwnerName": data.franchiseOwnerName,
       "Business Name": data.businessName || "",
       "Franchise Location": data.franchiseLocation,
       "Franchise Address": data.shippingAddress,
