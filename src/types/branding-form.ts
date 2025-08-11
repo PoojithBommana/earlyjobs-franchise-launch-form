@@ -9,7 +9,7 @@ export const brandingFormSchema = z.object({
   shippingAddress: z.string().min(1, "Full Shipping Address is required"),
   mobileNumber: z.string().min(10, "Valid mobile number is required"),
   alternateMobile: z.string().optional(),
-  preferredWorkingHours: z.string().min(1, "Preferred Working Hours is required"),
+  // preferredWorkingHours: z.string().min(1, "Preferred Working Hours is required"),
 
   // Section B: Office Branding Setup Details
   officeType: z.enum(['owned', 'rented', 'coworking'], {

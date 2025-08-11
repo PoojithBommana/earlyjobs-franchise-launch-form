@@ -101,7 +101,7 @@ const BrandingForm = () => {
               {/* Section A: Franchise Identification & Shipping Details */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Franchise Identification & Shipping Details</CardTitle>
+                  <CardTitle>Franchise Identification</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <FormField
@@ -123,7 +123,7 @@ const BrandingForm = () => {
                     name="businessName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Business Name (If Registered)</FormLabel>
+                        <FormLabel>Business Name </FormLabel>
                         <FormControl>
                           <Input {...field} />
                         </FormControl>
@@ -151,7 +151,7 @@ const BrandingForm = () => {
                     name="shippingAddress"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Full Shipping Address (with Landmark & PIN Code) *</FormLabel>
+                        <FormLabel>Franchise Address *</FormLabel>
                         <FormControl>
                           <Textarea {...field} rows={3} />
                         </FormControl>
@@ -190,7 +190,7 @@ const BrandingForm = () => {
                     />
                   </div>
 
-                  <FormField
+                  {/* <FormField
                     control={form.control}
                     name="preferredWorkingHours"
                     render={({ field }) => (
@@ -202,7 +202,7 @@ const BrandingForm = () => {
                         <FormMessage />
                       </FormItem>
                     )}
-                  />
+                  /> */}
                 </CardContent>
               </Card>
 

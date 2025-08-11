@@ -18,10 +18,10 @@ export const submitBrandingForm = async (data: BrandingFormData) => {
       "Franchise Owner Name": data.franchiseOwnerName,
       "Business Name": data.businessName || "",
       "Franchise Location": data.franchiseLocation,
-      "Shipping Address": data.shippingAddress,
+      "Franchise Address": data.shippingAddress,
       "Mobile Number": data.mobileNumber,
       "Alternate Mobile": data.alternateMobile || "",
-      "Preferred Working Hours": data.preferredWorkingHours,
+      
       "Office Type": data.officeType,
       "Frontage Type": data.frontageType === 'other' ? data.frontageTypeOther || "Other" : data.frontageType,
       "Flex Dimensions": `${data.flexLength}ft x ${data.flexHeight}ft`,
@@ -35,7 +35,7 @@ export const submitBrandingForm = async (data: BrandingFormData) => {
       "Regional Language": data.regionalLanguage === 'other' ? data.regionalLanguageOther || "Other" : data.regionalLanguage,
       "T-shirt Size 1": data.tshirtSize1,
       "T-shirt Size 2": data.tshirtSize2,
-      "Local Printing Preference": data.localPrintingPreference ? "Yes" : "No",
+      
       "File Format": data.fileFormat || "",
       "Submission Date": data.submissionDate ? format(data.submissionDate, 'MM/dd/yyyy') : format(new Date(), 'MM/dd/yyyy'),
       "Signature": data.signature || "",
