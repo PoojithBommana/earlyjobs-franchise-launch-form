@@ -109,7 +109,7 @@ const BrandingForm = () => {
                     name="franchiseOwnerName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Franchise Owner Name *</FormLabel>
+                        <FormLabel>Franchise Owner Name (As per Registration)</FormLabel>
                         <FormControl>
                           <Input {...field} />
                         </FormControl>
