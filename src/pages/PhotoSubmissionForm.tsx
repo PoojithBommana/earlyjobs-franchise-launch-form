@@ -279,6 +279,9 @@ const PhotoSubmissionForm = () => {
                     </FormItem>
                   )}
                 />
+
+                
+
                 <FormField
                   control={form.control}
                   name="Branding_Elements_Count"
@@ -313,6 +316,24 @@ const PhotoSubmissionForm = () => {
                     </FormItem>
                   )}
                 />
+
+                <FormField
+                  control={form.control}
+                  name="Branded_Frame_Photo"
+                  render={({ field }) => (
+                    <FormItem>
+                      <PhotoUploadField
+                        label="Branded Frame or Certificate Display"
+                        value={field.value}
+                        onChange={field.onChange}
+                        candidateId={form.watch('Full_Name') || 'Default'}
+                      />
+                      <p className="text-xs text-gray-500">Photo of branded certificate frames, awards, or display materials.</p>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
               </CardContent>
             </Card>
             {/* Section 3: Confirmation & Notes */}

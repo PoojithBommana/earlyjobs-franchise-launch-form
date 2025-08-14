@@ -6,7 +6,7 @@ export const submitPhotoFormToGoogleSheets = async (data: PhotoSubmissionFormDat
     console.log('Starting photo form submission with data:', data);
 
     // Using the correct SheetDB API endpoint
-    const GOOGLE_SHEETS_URL = 'https://sheetdb.io/api/v1/q7jokcqtp5r2d';
+    const GOOGLE_SHEETS_URL = 'https://sheetdb.io/api/v1/r4japgrx814me';
 
     // Calculate IST time
     const now = new Date();
@@ -29,7 +29,7 @@ export const submitPhotoFormToGoogleSheets = async (data: PhotoSubmissionFormDat
       // Only accept HTTPS URLs (S3 or other cloud storage)
       if (url.startsWith('https://')) {
         console.log('✅ Valid S3 URL found');
-        return url;
+        return `=HYPERLINK("${url}", "View Photo")`;
       }
       
       // Skip data URLs completely
@@ -51,6 +51,7 @@ export const submitPhotoFormToGoogleSheets = async (data: PhotoSubmissionFormDat
       "Reception_Photo": sanitizePhotoUrl(data.Reception_Photo),
       "Workstations_Photo": sanitizePhotoUrl(data.Workstations_Photo),
       "Meeting_Space_Photo": sanitizePhotoUrl(data.Meeting_Space_Photo),
+      "Branded_Frame_Photo": sanitizePhotoUrl(data.Branded_Frame_Photo),
       "Branding_Elements_Count": sanitizeValue(data.Branding_Elements_Count),
       "Team_Photo": sanitizePhotoUrl(data.Team_Photo),
       "Branding_Complete": data.Branding_Complete === "yes" ? "Yes" : "No",

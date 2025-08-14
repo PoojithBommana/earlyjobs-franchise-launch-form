@@ -14,6 +14,7 @@ export const photoSubmissionSchema = z.object({
   Reception_Photo: z.string().optional(),
   Workstations_Photo: z.string().optional(),
   Meeting_Space_Photo: z.string().optional(),
+  Branded_Frame_Photo: z.string().optional(),
   Branding_Elements_Count: z.string().optional(),
   Team_Photo: z.string().optional(),
 
