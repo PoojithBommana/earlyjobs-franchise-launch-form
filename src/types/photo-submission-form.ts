@@ -17,7 +17,7 @@ export const photoSubmissionSchema = z.object({
   Branded_Frame_Photo: z.string().optional(),
   Branding_Elements_Count: z.string().optional(),
   Team_Photo: z.string().optional(),
-
+  Branding_Files_Required:  z.string().optional(),
   // Section 3: Confirmation
   Branding_Complete: z.enum(["yes", "no"], {
     required_error: "Please confirm if branding was done as per checklist",

@@ -162,7 +162,7 @@ const PhotoSubmissionForm = () => {
                   name="Branding_Completion_Date"
                   render={({ field }) => (
                     <FormItem className="flex flex-col">
-                      <FormLabel>Date of Branding Completion <span className="text-red-500">*</span></FormLabel>
+                      <FormLabel>Date of Branding Installation <span className="text-red-500">*</span></FormLabel>
                       <Popover>
                         <PopoverTrigger asChild>
                           <FormControl>
@@ -323,12 +323,31 @@ const PhotoSubmissionForm = () => {
                   render={({ field }) => (
                     <FormItem>
                       <PhotoUploadField
-                        label="Branded Frame or Certificate Display"
+                        label="Branded Frame (A2 Size)"
                         value={field.value}
                         onChange={field.onChange}
                         candidateId={form.watch('Full_Name') || 'Default'}
                       />
-                      <p className="text-xs text-gray-500">Photo of branded certificate frames, awards, or display materials.</p>
+                      <p className="text-xs text-gray-500">Install all the a2 size frames on wall</p>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="Branding_Files_Required"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Additional Branding Files Required *</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="text"
+                          placeholder="Please share details here"
+                          {...field} 
+                        />
+                      </FormControl>
+                     
                       <FormMessage />
                     </FormItem>
                   )}

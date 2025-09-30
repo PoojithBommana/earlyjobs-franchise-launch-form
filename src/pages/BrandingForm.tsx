@@ -109,7 +109,7 @@ const BrandingForm = () => {
                     name="franchiseOwnerName"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Franchise Owner Name (As per Registration)</FormLabel>
+                        <FormLabel>Franchise Owner Name (As per Business Registration)</FormLabel>
                         <FormControl>
                           <Input {...field} />
                         </FormControl>
@@ -166,7 +166,7 @@ const BrandingForm = () => {
                       name="mobileNumber"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Mobile Number for Delivery Contact *</FormLabel>
+                          <FormLabel>Mobile Number*</FormLabel>
                           <FormControl>
                             <Input {...field} />
                           </FormControl>
@@ -217,7 +217,7 @@ const BrandingForm = () => {
                     name="officeType"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Office Type *</FormLabel>
+                        <FormLabel className='text-lg '>Office Type *</FormLabel>
                         <FormControl>
                           <RadioGroup
                             onValueChange={field.onChange}
@@ -234,7 +234,8 @@ const BrandingForm = () => {
                             </div>
                             <div className="flex items-center space-x-2">
                               <RadioGroupItem value="coworking" id="coworking" />
-                              <Label htmlFor="coworking">Co-working</Label>
+                              <Label htmlFor="coworking">Co-working ( Written confirmation from the co-working space for branding purposes needed
+) </Label>
                             </div>
                           </RadioGroup>
                         </FormControl>
@@ -249,7 +250,7 @@ const BrandingForm = () => {
                       name="frontageType"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Office Frontage Type *</FormLabel>
+                          <FormLabel className='text-lg '>Office Frontage Type *</FormLabel>
                           <FormControl>
                             <RadioGroup
                               onValueChange={field.onChange}
@@ -460,7 +461,7 @@ const BrandingForm = () => {
                     )}
                   />
 
-                  <div>
+                  {/* <div>
                     <FormField
                       control={form.control}
                       name="designation"
@@ -506,7 +507,7 @@ const BrandingForm = () => {
                         )}
                       />
                     )}
-                  </div>
+                  </div> */}
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
@@ -591,7 +592,7 @@ const BrandingForm = () => {
                         name="tshirtSize1"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Size 1</FormLabel>
+                            <FormLabel>Franchise Partner</FormLabel>
                             <FormControl>
                               <Select onValueChange={field.onChange} value={field.value}>
                                 <SelectTrigger>
@@ -616,7 +617,7 @@ const BrandingForm = () => {
                         name="tshirtSize2"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Size 2</FormLabel>
+                            <FormLabel>For Staff</FormLabel>
                             <FormControl>
                               <Select onValueChange={field.onChange} value={field.value}>
                                 <SelectTrigger>

@@ -54,6 +54,7 @@ export const submitPhotoFormToGoogleSheets = async (data: PhotoSubmissionFormDat
       "Branded_Frame_Photo": sanitizePhotoUrl(data.Branded_Frame_Photo),
       "Branding_Elements_Count": sanitizeValue(data.Branding_Elements_Count),
       "Team_Photo": sanitizePhotoUrl(data.Team_Photo),
+      "Branding_Files_Required":sanitizeValue(data.Branding_Files_Required),
       "Branding_Complete": data.Branding_Complete === "yes" ? "Yes" : "No",
       "Additional_Notes": sanitizeValue(data.Additional_Notes),
       "Declaration_Confirmed": data.Declaration_Confirmed ? "Yes" : "No",
