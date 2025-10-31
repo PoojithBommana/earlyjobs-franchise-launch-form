@@ -32,8 +32,6 @@ const documentsList = [
   { key: 'businessReg', label: 'Business Registration Certificate', dualUpload: false },
   { key: 'cheque', label: 'Cancelled Cheque', dualUpload: false },
   { key: 'rental', label: 'Rental Agreement', dualUpload: false },
-  { key: 'electricity', label: 'Latest Electricity Bill', dualUpload: false },
-  { key: 'agreement', label: 'Signed Franchise Agreement', dualUpload: false },
   { key: 'panCopy', label: 'Business PAN (If sole proprietor)', dualUpload: false },
   { key: 'secondaryId', label: 'GST Certificate', dualUpload: false },
 ];
@@ -187,7 +185,7 @@ const DocumentsChecklist = () => {
               <FormItem style={{ display: 'flex', flexDirection: 'column' }}>
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between">
                   <FormLabel className="text-base font-medium">
-                    {label} {dualUpload || (key !== 'panCopy' && key !== 'secondaryId' && key !== 'agreement') ? '*' : '(Optional)'}
+                    {label} {dualUpload || (key !== 'panCopy' && key !== 'secondaryId') ? '*' : '(Optional)'}
                   </FormLabel>
                   <FormControl>
                     <div className="flex flex-col md:flex-row md:items-center md:gap-4 sm:mt-3">
@@ -371,8 +369,6 @@ const FranchiseForm = () => {
         businessReg: { status: 'pending', driveLink: '' },
         cheque: { status: 'pending', driveLink: '' },
         rental: { status: 'pending', driveLink: '' },
-        electricity: { status: 'pending', driveLink: '' },
-        agreement: { status: 'pending', driveLink: '' },
         panCopy: { status: 'pending', driveLink: '' },
         secondaryId: { status: 'pending', driveLink: '' },
       },
@@ -414,8 +410,6 @@ const FranchiseForm = () => {
       'businessReg',
       'cheque',
       'rental',
-      'electricity',
-      'agreement',
       'panCopy',
       'secondaryId',
     ];
@@ -430,8 +424,7 @@ const FranchiseForm = () => {
       return !doc.driveLink || doc.driveLink.trim() === '';
     }).filter(key => 
       key !== 'panCopy' && 
-      key !== 'secondaryId' && 
-      key !== 'agreement'
+      key !== 'secondaryId'
     );
 
     if (missingDocuments.length > 0) {
